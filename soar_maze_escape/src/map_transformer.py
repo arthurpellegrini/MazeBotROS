@@ -6,6 +6,7 @@ from nav_msgs.srv import GetMap
 from nav_msgs.msg import OccupancyGrid
 import numpy as np
 import matplotlib.pyplot as plt
+import os
 
 def get_map() -> OccupancyGrid:
     """Loads map from ROS service."""
@@ -56,6 +57,11 @@ def plot_map(free_positions, wall_positions):
     plt.ylabel('Y')
     plt.legend()
     plt.title('Transformed Map')
+    output_dir = "results"
+    os.makedirs(output_dir, exist_ok=True)
+
+    plt.savefig(os.path.join(output_dir, 'transformed_map.png'))
+    
     plt.show()
 
 if __name__ == "__main__":
