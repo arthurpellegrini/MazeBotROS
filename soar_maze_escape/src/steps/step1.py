@@ -81,7 +81,7 @@ def plot_map(free_positions, wall_positions, save_to_file=True):
     plt.tight_layout()
 
     if save_to_file:
-        output_dir = "results"
+        output_dir = "../results"
         os.makedirs(output_dir, exist_ok=True)
         file_path = os.path.join(output_dir, 'transformed_map.png')
         plt.savefig(file_path)
