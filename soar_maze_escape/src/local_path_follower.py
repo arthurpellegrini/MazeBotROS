@@ -2,26 +2,25 @@
 
 import rospy
 import tf2_ros
-from geometry_msgs.msg import Twist
-from nav_msgs.srv import GetMap
-from nav_msgs.msg import OccupancyGrid
 import numpy as np
 import heapq
+import matplotlib.pyplot as plt
+from geometry_msgs.msg import Twist, Point, Quaternion
+from nav_msgs.srv import GetMap
+from nav_msgs.msg import OccupancyGrid
+from tf.transformations import quaternion_from_euler
+from visualization_msgs.msg import Marker
+
 
 # Global publisher for velocity commands
 cmd_vel_pub = None
 
-
 def get_map() -> OccupancyGrid:
     """Loads the map from the ROS service."""
-    try:
-        rospy.wait_for_service('static_map', timeout=10)
-        get_map_service = rospy.ServiceProxy('static_map', GetMap)
-        received_map = get_map_service()
-        return received_map.map
-    except rospy.ROSException as e:
-        rospy.logerr(f"Service call failed: {e}")
-        raise
+    rospy.wait_for_service('static_map', timeout=10)
+    get_map_service = rospy.ServiceProxy('static_map', GetMap)
+    received_map = get_map_service()
+    return received_map.map
 
 
 def transform_map(occupancy_grid: OccupancyGrid):
@@ -53,33 +52,29 @@ def create_graph(grid):
 
 
 def get_robot_position():
-    """Gets the robot's current position and orientation in the map frame."""
-    try:
-        tf_buffer = tf2_ros.Buffer()
-        tf_listener = tf2_ros.TransformListener(tf_buffer)
-        rospy.sleep(1)  # Allow some time for the listener to initialize
+    """Gets the robot's current position in the map frame."""
+    tf_buffer = tf2_ros.Buffer()
+    tf_listener = tf2_ros.TransformListener(tf_buffer)
+    rospy.sleep(1)
 
-        transform = tf_buffer.lookup_transform('map', 'base_link', rospy.Time(0), rospy.Duration(2.0))
-        x = transform.transform.translation.x
-        y = transform.transform.translation.y
+    transform = tf_buffer.lookup_transform('map', 'base_link', rospy.Time(0), rospy.Duration(2.0))
+    x = transform.transform.translation.x
+    y = transform.transform.translation.y
 
-        # Extract the robot's orientation as a quaternion and convert to yaw (theta)
-        q = transform.transform.rotation
-        siny_cosp = 2.0 * (q.w * q.z + q.x * q.y)
-        cosy_cosp = 1.0 - 2.0 * (q.y * q.y + q.z * q.z)
-        theta = np.arctan2(siny_cosp, cosy_cosp)
+    # Extract the robot's orientation as a quaternion and convert to yaw (theta)
+    q = transform.transform.rotation
+    siny_cosp = 2.0 * (q.w * q.z + q.x * q.y)
+    cosy_cosp = 1.0 - 2.0 * (q.y * q.y + q.z * q.z)
+    theta = np.arctan2(siny_cosp, cosy_cosp)
 
-        return x, y, theta
-    except tf2_ros.LookupException as e:
-        rospy.logerr(f"Transform error: {e}")
-        raise
+    return x, y, theta
 
 
 def world_to_grid(world_x, world_y, resolution, origin):
     """Converts world coordinates to grid coordinates."""
-    grid_x = int(round((world_x - origin.x) / resolution))
-    grid_y = int(round((world_y - origin.y) / resolution))
-    return max(0, grid_x), max(0, grid_y)  # Ensure within bounds
+    grid_x = int((world_x - origin.x) / resolution)
+    grid_y = int((world_y - origin.y) / resolution)
+    return grid_x, grid_y
 
 
 def grid_to_world(grid_x, grid_y, resolution, origin):
@@ -87,7 +82,6 @@ def grid_to_world(grid_x, grid_y, resolution, origin):
     world_x = grid_x * resolution + origin.x
     world_y = grid_y * resolution + origin.y
     return world_x, world_y
-
 
 def find_exits(grid):
     """Finds the exit nodes (free cells on the boundary)."""
@@ -132,7 +126,34 @@ def a_star_search(graph, start, goal):
                 g_score[neighbor] = tentative_g_score
                 f_score[neighbor] = g_score[neighbor] + heuristic(neighbor, goal)
                 heapq.heappush(open_set, (f_score[neighbor], neighbor))
-    return None  # Path not found
+    return None
+
+def publish_path_marker(path, resolution, origin):
+    """Publishes the A* path as a line marker in Rviz."""
+    marker = Marker()
+    marker.header.frame_id = "map"
+    marker.header.stamp = rospy.Time.now()
+    marker.ns = "a_star_path"
+    marker.id = 0
+    marker.type = Marker.LINE_STRIP
+    marker.action = Marker.ADD
+    marker.scale.x = 0.05  # Line width in meters
+
+    # Line color (RGBA)
+    marker.color.r = 0.0
+    marker.color.g = 0.0
+    marker.color.b = 1.0
+    marker.color.a = 1.0
+
+    # Convert path grid points to world coordinates
+    marker.points = []
+    for grid_x, grid_y in path:
+        world_x, world_y = grid_to_world(grid_x, grid_y, resolution, origin)
+        marker.points.append(Point(world_x, world_y, 0.0))  # z=0 for 2D visualization
+
+    # Publish the marker
+    path_marker_pub.publish(marker)
+    rospy.loginfo("Path marker published to Rviz.")
 
 
 def heuristic(a, b):
@@ -150,38 +171,50 @@ def reconstruct_path(came_from, current):
     return path
 
 
-def smooth_path(path):
-    """Applies basic smoothing to reduce sharp turns."""
-    smoothed_path = [path[0]]
-    for i in range(1, len(path) - 1):
-        prev = np.array(path[i - 1])
-        curr = np.array(path[i])
-        next = np.array(path[i + 1])
-        avg = (prev + next) / 2.0
-        smoothed_path.append(tuple(avg.astype(int)))
-    smoothed_path.append(path[-1])
-    return smoothed_path
+def follow_path(path, resolution, origin):
+    """Follows the path generated by A*."""
+    for grid_point in path:
+        waypoint_x, waypoint_y = grid_to_world(grid_point[0], grid_point[1], resolution, origin)
+        align_and_move(waypoint_x, waypoint_y)
 
 
-def calculate_velocity_to_target(robot_x, robot_y, waypoint_x, waypoint_y):
-    """Calculates linear and angular velocity to reach the target waypoint."""
-    kp_linear = 0.5
-    kp_angular = 2.0
+def align_and_move(waypoint_x, waypoint_y):
+    """Aligns the robot to the waypoint and moves towards it."""
+    robot_x, robot_y, robot_theta = get_robot_position()
     dx = waypoint_x - robot_x
     dy = waypoint_y - robot_y
     distance = np.sqrt(dx**2 + dy**2)
-    angle_to_target = np.arctan2(dy, dx)
 
-    # Normalize angle to [-pi, pi]
-    angular_diff = np.arctan2(np.sin(angle_to_target), np.cos(angle_to_target))
+    # Align robot
+    target_angle = np.arctan2(dy, dx)
+    angular_diff = target_angle - robot_theta
+    angular_diff = np.arctan2(np.sin(angular_diff), np.cos(angular_diff))  # Normalize to [-pi, pi]
 
-    # Stop moving if close enough
-    if distance < 0.1:
-        return 0.0, 0.0
+    # Aligning loop
+    while abs(angular_diff) > 0.1:  # Threshold for alignment (radians)
+        angular_velocity = max(min(angular_diff * 2.0, 1.0), -1.0)  # Limit angular speed
+        publish_velocity(0, angular_velocity)  # Rotate towards target
+        rospy.sleep(0.1)
 
-    angular = kp_angular * angular_diff
-    linear = min(kp_linear * distance, 0.5)  # Cap max speed
-    return linear, angular
+        # Update robot's orientation dynamically
+        _, _, robot_theta = get_robot_position()
+        angular_diff = target_angle - robot_theta
+        angular_diff = np.arctan2(np.sin(angular_diff), np.cos(angular_diff))  # Normalize again
+
+    publish_velocity(0, 0)  # Stop rotation
+
+    # Move robot
+    while distance > 0.1:  # Threshold for reaching the waypoint
+        robot_x, robot_y, _ = get_robot_position()
+        dx = waypoint_x - robot_x
+        dy = waypoint_y - robot_y
+        distance = np.sqrt(dx**2 + dy**2)
+        linear_velocity = min(distance * 0.5, 0.3)  # Cap max speed
+        publish_velocity(linear_velocity, 0)  # Move forward
+        rospy.sleep(0.1)
+
+    publish_velocity(0, 0)  # Stop robot
+
 
 
 def publish_velocity(linear, angular):
@@ -191,35 +224,72 @@ def publish_velocity(linear, angular):
     twist.angular.z = angular
     cmd_vel_pub.publish(twist)
 
+def plot_map_with_path(grid, path, resolution, origin):
+    """Plots the map with improved visualization for walls, free space, and the computed path."""
+    plt.figure(figsize=(12, 12))
 
-def align_robot(robot_x, robot_y, robot_theta, waypoint_x, waypoint_y):
-    """Align the robot to face the first waypoint."""
-    kp_angular = 2.0
-    angle_to_target = np.arctan2(waypoint_y - robot_y, waypoint_x - robot_x)
+    # Extract walls, free space, and path data
+    walls = np.argwhere(grid == 100)
+    free_space = np.argwhere(grid == 0)
 
-    # Calculate angular difference relative to the robot's current heading
-    angular_diff = angle_to_target - robot_theta
-    angular_diff = np.arctan2(np.sin(angular_diff), np.cos(angular_diff))  # Normalize to [-pi, pi]
+    # Plot walls (red squares)
+    plt.scatter(
+        walls[:, 1] * resolution + origin.x,
+        walls[:, 0] * resolution + origin.y,
+        c='black', s=10, label='Walls', marker='s'
+    )
 
-    rospy.loginfo(f"Aligning robot. Current theta: {robot_theta:.2f}, Target angle: {angle_to_target:.2f}")
+    # Plot free space (light gray dots)
+    plt.scatter(
+        free_space[:, 1] * resolution + origin.x,
+        free_space[:, 0] * resolution + origin.y,
+        c='lightgray', s=1, label='Free Space'
+    )
 
-    while abs(angular_diff) > 0.05:  # Threshold for alignment (radians)
-        angular_velocity = kp_angular * angular_diff
-        publish_velocity(0.0, angular_velocity)  # Only rotate
-        rospy.sleep(0.1)
+    # Plot the path (blue line with larger points for emphasis)
+    if path:
+        path_x = [p[0] * resolution + origin.x for p in path]
+        path_y = [p[1] * resolution + origin.y for p in path]
+        plt.plot(path_x, path_y, c='blue', linewidth=2, label='Path')  # Blue line for the path
+        plt.scatter(path_x, path_y, c='blue', s=15, label='Path Points')  # Larger dots for path points
 
-        # Update robot's orientation dynamically
-        _, _, robot_theta = get_robot_position()
-        angular_diff = angle_to_target - robot_theta
-        angular_diff = np.arctan2(np.sin(angular_diff), np.cos(angular_diff))  # Normalize
-    publish_velocity(0.0, 0.0)  # Stop rotation
-    rospy.loginfo("Robot aligned successfully.")
+    # Highlight start and goal points with distinct markers
+    if path:
+        plt.scatter(
+            path_x[0], path_y[0], c='green', s=100, label='Start', marker='o'
+        )  # Start (green circle)
+        plt.scatter(
+            path_x[-1], path_y[-1], c='red', s=100, label='Exit', marker='x'
+        )  # Exit (red cross)
 
+    # Add labels, title, and legend
+    plt.xlabel("X-Coordinate (m)")
+    plt.ylabel("Y-Coordinate (m)")
+    plt.title("Maze Map with Global Path", fontsize=16)
+    plt.legend(loc='upper right', fontsize=12)
+    plt.grid(color='gray', linestyle='--', linewidth=0.5)
+
+    # Show the plot
+    plt.tight_layout()
+    plt.show()
 
 def main():
-    rospy.init_node('maze_escape_planner')
-    global cmd_vel_pub
+    rospy.init_node('local_path_follower')
+    global path_marker_pub, cmd_vel_pub
+
+    # Initialize publishers
+    path_marker_pub = rospy.Publisher('/a_star_path', Marker, queue_size=10)
     cmd_vel_pub = rospy.Publisher('/cmd_vel', Twist, queue_size=10)
+
+    # Allow time for publishers to initialize
+    rospy.logerr("You can add the marker in Rviz, be quick")
+    rospy.sleep(5)
+    if not path_marker_pub:
+        rospy.logerr("Path marker publisher is not initialized.")
+        return
+    if not cmd_vel_pub:
+        rospy.logerr("Velocity command publisher is not initialized.")
+        return
 
     try:
         occupancy_grid = get_map()
@@ -229,34 +299,31 @@ def main():
         robot_x, robot_y, robot_theta = get_robot_position()
         start = world_to_grid(robot_x, robot_y, resolution, origin)
 
-        if grid[start[1], start[0]] != 0:
-            rospy.logerr("Robot is starting in a wall!")
-            return
-
         exits = find_exits(grid)
-        shortest_path = None
-        for exit in exits:
-            path = a_star_search(graph, start, exit)
-            if path and (shortest_path is None or len(path) < len(shortest_path)):
-                shortest_path = path
+        rospy.loginfo(f"Exits found: {exits}")
 
-        if shortest_path:
-            rospy.loginfo("Path successfully found!")
-            shortest_path = smooth_path(shortest_path)
+        paths = [a_star_search(graph, start, e) for e in exits]
+        valid_paths = [path for path in paths if path]
+        if not valid_paths:
+            rospy.logwarn("No valid paths found to any exit.")
+            return
+        shortest_path = min(valid_paths, key=len)
 
-            for waypoint in shortest_path:
-                robot_x, robot_y, robot_theta = get_robot_position()
-                waypoint_x, waypoint_y = grid_to_world(waypoint[0], waypoint[1], resolution, origin)
-                align_robot(robot_x, robot_y, robot_theta, waypoint_x, waypoint_y)
-                linear, angular = calculate_velocity_to_target(robot_x, robot_y, waypoint_x, waypoint_y)
-                publish_velocity(linear, angular)
-                rospy.sleep(0.1)
-            publish_velocity(0, 0)
-            rospy.loginfo("Robot has reached the exit!")
-        else:
-            rospy.logwarn("No valid path to the exit found.")
+        rospy.loginfo(f"Shortest path: {shortest_path}")
+        
+        # Plot the map and the planned path
+        plot_map_with_path(grid, shortest_path, resolution, origin)
+
+        # Publish the path marker for Rviz visualization
+        publish_path_marker(shortest_path, resolution, origin)
+
+        # Follow the path
+        follow_path(shortest_path, resolution, origin)
+        rospy.loginfo("Robot has exited the maze.")
     except Exception as e:
         rospy.logerr(f"Error: {e}")
+
+
 
 
 if __name__ == "__main__":
