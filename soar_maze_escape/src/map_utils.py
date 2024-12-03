@@ -1,36 +1,42 @@
 import rospy
-from nav_msgs.srv import GetMap
 import numpy as np
 
-def get_map():
-    rospy.wait_for_service('static_map', timeout=10)
-    get_map_service = rospy.ServiceProxy('static_map', GetMap)
-    return get_map_service().map
+from nav_msgs.srv import GetMap
+from nav_msgs.msg import OccupancyGrid
 
-def transform_map(occupancy_grid):
-    data = occupancy_grid.data
+
+# Helper method for retrieving the map
+def getMap() -> OccupancyGrid:
+    """ Loads map from map service """
+    # Create service proxy
+    get_map = rospy.ServiceProxy('static_map', GetMap)
+    # Call service
+    recMap = get_map()
+    recMap = recMap.map
+    # Return
+    return recMap
+
+def transformMap(occupancy_grid: OccupancyGrid):
+    """ Transforms the OccupancyGrid into Cartesian coordinates for free and wall points. """
+    # Extract map data and metadata
+    resolution = occupancy_grid.info.resolution
     width = occupancy_grid.info.width
     height = occupancy_grid.info.height
-    resolution = occupancy_grid.info.resolution
     origin = occupancy_grid.info.origin.position
 
-    grid = np.array(data).reshape((height, width))
-    return grid, resolution, origin
+    # Convert the 1D array into a 2D grid
+    grid = np.array(occupancy_grid.data).reshape((height, width))
 
-def find_exits(grid):
-    height, width = grid.shape
-    exits = []
+    # Find indices for free and wall cells
+    free_indices = np.argwhere(grid == 0)  # Free space
+    wall_indices = np.argwhere(grid == 100)  # Walls
 
-    for x in range(width):
-        if grid[0, x] == 0:
-            exits.append((x, 0))
-        if grid[height - 1, x] == 0:
-            exits.append((x, height - 1))
+    # Transform indices to Cartesian coordinates
+    def to_cartesian(indices):
+        return indices * resolution + np.array([origin.y, origin.x])
+        # return np.fliplr(coords)  # Flip to (x, y) order
 
-    for y in range(height):
-        if grid[y, 0] == 0:
-            exits.append((0, y))
-        if grid[y, width - 1] == 0:
-            exits.append((width - 1, y))
+    free_positions = to_cartesian(free_indices)
+    wall_positions = to_cartesian(wall_indices)
 
-    return exits
+    return free_positions, wall_positions
