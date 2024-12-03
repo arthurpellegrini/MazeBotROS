@@ -5,9 +5,9 @@ import tf2_ros
 from scipy.spatial.transform import Rotation as R
 
 def get_robot_position():
-    """Localise le robot dans le cadre 'map'. Renvoie (x, y, theta)."""
+    """Localises the robot towards the 'map' coordinate frame. Returns pose in format (x,y,theta)"""
     tfBuffer = tf2_ros.Buffer()
-    tf_listener = tf2_ros.TransformListener(tfBuffer)
+    tf_listener = tf2_ros.TransformListener(tfBuffer) # DO not remove this line, function crash otherwise
 
     while True:
         try:
