@@ -2,7 +2,7 @@
 
 import rospy
 from map_utils import getMap, transformMap
-from graph_utils import build_graph, add_exits
+from graph_utils import buildGraph, addExits
 from visualization_utils import plotMap, plotGraph
 from robot_controller import localiseRobot
 import numpy as np
@@ -17,12 +17,12 @@ def main():
     grid = np.array(recMap.data).reshape((recMap.info.height, recMap.info.width))
 
     # Build graph
-    nodes, edges = build_graph(grid)
+    nodes, edges = buildGraph(grid)
     for edge in edges:
         print(edge)
 
     # Add exits to the graph
-    nodes, edges = add_exits(grid, nodes, edges)
+    nodes, edges = addExits(grid, nodes, edges)
 
     robot_pos = localiseRobot()
     print("robot pose",robot_pos)
