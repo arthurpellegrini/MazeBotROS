@@ -13,7 +13,6 @@ def getMap() -> OccupancyGrid:
     # Call service
     recMap = get_map()
     recMap = recMap.map
-    # Return
     return recMap
 
 def transformMap(occupancy_grid: OccupancyGrid):
@@ -34,7 +33,6 @@ def transformMap(occupancy_grid: OccupancyGrid):
     # Transform indices to Cartesian coordinates
     def to_cartesian(indices):
         return indices * resolution + np.array([origin.y, origin.x])
-        # return np.fliplr(coords)  # Flip to (x, y) order
 
     free_positions = to_cartesian(free_indices)
     wall_positions = to_cartesian(wall_indices)
