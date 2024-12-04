@@ -17,24 +17,6 @@ def main():
 
     # Build graph
     nodes, edges = build_graph(grid)
-
-    # edges = [((4, 4), (10,4)), 
-    #         ((4,10), (10,10)),
-    #         ((4,16), (4,22)),
-    #         ((4,22), (10,22)),
-    #         ((10,4), (10,10)),
-    #         ((10,10), (10,16)),
-    #         ((10,16), (16,16)),
-    #         ((10,16), (10,22)),
-    #         ((16,4), (16,10)),
-    #         ((16,10), (22,10))]
-
-    # Print nodes and edges
-    print("Nodes:")
-    for node in nodes.values():
-        print(node)
-
-    print("\nEdges:")
     for edge in edges:
         print(edge)
 
