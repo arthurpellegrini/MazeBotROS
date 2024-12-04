@@ -7,6 +7,9 @@ class Node:
     def __init__(self, position):
         self.position = position
 
+    def get_position(self):
+        return self.position
+
     def __str__(self):
         return str(self.position[0]) + "." + str(self.position[1])
 
@@ -22,6 +25,12 @@ class Edge:
     
     def get_cost(self):
         return self.cost
+    
+    def get_parent(self):
+        return self.parent
+    
+    def get_child(self):
+        return self.child
     
     def __str__(self):
         return "{'parent': '" + str(self.parent) + "'" + \
@@ -39,50 +48,37 @@ def is_node(grid, x, y):
     # A node has more than 2 free neighbors or is a dead end
     return free_neighbors != 2
 
-# # Find neighbors in free space
-# def find_neighbors(grid, x, y):
-#     neighbors = []
-#     for dx, dy in [(-5, 0), (5, 0), (0, -5), (0, 5)]:
-#         nx, ny = x + dx, y + dy
-#         if 0 <= nx < grid.shape[1] and 0 <= ny < grid.shape[0] and grid[ny, nx] == 0:
-#             neighbors.append((nx, ny))
-#     return neighbors
-
-# Perform BFS/DFS to find edges between nodes
-def find_edges(grid, start, nodes):
-    visited = set()
-    stack = [(start, 0, [])]
-    edges = []
-
-    while stack:
-        (cx, cy), cost, path = stack.pop()
-        visited.add((cx, cy))
-        path = path + [(cx, cy)]
-
-        if (cx, cy) != start and (cx, cy) in nodes:
-            edges.append((start, (cx, cy), cost))
-            continue
-
-        for nx, ny in find_neighbors(grid, cx, cy):
-            if (nx, ny) not in visited:
-                stack.append(((nx, ny), cost + 1, path))
-
-    return edges
-
 def has_wall(grid, start, end):
+    """
+    Checks if there is a wall between the start and end points.
+    
+    Args:
+        grid (numpy.ndarray): The grid map.
+        start (tuple): Starting coordinates (x1, y1).
+        end (tuple): Ending coordinates (x2, y2).
+    
+    Returns:
+        bool: True if a wall is found, False otherwise.
+    """
     x1, y1 = start
     x2, y2 = end
-    if x1 == x2:
-        step = SIZE if y2 > y1 else -SIZE
-        for y in range(y1, y2, step):
-            if grid[y, x1] == 1:
-                return True
-    elif y1 == y2:
-        step = SIZE if x2 > x1 else -SIZE
-        for x in range(x1, x2, step):
-            if grid[y1, x] == 1:
-                return True
+
+    # Determine the number of steps needed to traverse between start and end
+    dx = x2 - x1
+    dy = y2 - y1
+    steps = max(abs(dx), abs(dy))
+    
+    # Check points along the path, excluding start and end
+    for step in range(1, steps):
+        x = x1 + step * dx // steps
+        y = y1 + step * dy // steps
+
+        # Check if the current position is a wall
+        if grid[y, x] != 0:  # Assuming non-zero values indicate walls
+            return True
+
     return False
+
 
 def find_neighbors(grid, x, y):
     neighbors = []
@@ -90,19 +86,37 @@ def find_neighbors(grid, x, y):
     for dx, dy in directions:
         nx, ny = x + dx, y + dy
         if 0 <= nx < grid.shape[1] and 0 <= ny < grid.shape[0]:
-            if grid[ny, nx] == 0 and not has_wall(grid, (x, y), (nx, ny)):
-                neighbors.append((nx, ny))
+            if grid[ny, nx] == 0:
+                if not has_wall(grid, (x, y), (nx, ny)):
+                    neighbors.append((nx, ny))
+                else:
+                    continue
     return neighbors
 
 def build_graph(grid):
+    """
+    Constructs a graph from the grid, identifying nodes and edges.
+    
+    Args:
+        grid (numpy.ndarray): The occupancy grid map.
+    
+    Returns:
+        tuple: A dictionary of nodes and a list of edges.
+    """
     nodes = {}
     edges = []
-    for y in range(PADDING, grid.shape[0]-1, SIZE):
-        for x in range(PADDING, grid.shape[1]-1, SIZE):
-            if grid[y, x] == 0:  # Pas de mur sur le nœud
+
+    # Iterate through the grid with steps based on SIZE
+    for y in range(PADDING, grid.shape[0] - 1, SIZE):
+        for x in range(PADDING, grid.shape[1] - 1, SIZE):
+            if grid[y, x] == 0:  # Check if the current cell is a valid node
                 node = Node((x, y))
                 nodes[(x, y)] = node
+
+                # Find neighbors and create edges
                 for nx, ny in find_neighbors(grid, x, y):
                     if (nx, ny) in nodes:
-                        edges.append(((x, y), (nx, ny)))
+                        if not has_wall(grid, (x, y), (nx, ny)):
+                            edges.append(Edge(nodes[(x, y)], nodes[(nx, ny)], cost=SIZE))
+
     return nodes, edges

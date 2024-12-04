@@ -53,7 +53,7 @@ def plotGraph(recMap, edges, wall_positions, robot_pos):
         origin = recMap.info.origin.position
 
         # Convert grid indices (row, col) to Cartesian coordinates (x, y)
-        y_index, x_index = node
+        y_index, x_index = node.get_position()
         x_cartesian = x_index * resolution + (origin.x + resolution/2)
         y_cartesian = y_index * resolution + (origin.y + resolution/2)
 
@@ -61,9 +61,9 @@ def plotGraph(recMap, edges, wall_positions, robot_pos):
 
     # Get points on graph
     nodePositions = np.array([
-        fromNodeName(n[0], recMap) for n in edges
+        fromNodeName(n.get_parent(), recMap) for n in edges
     ] + [
-        fromNodeName(n[1], recMap) for n in edges
+        fromNodeName(n.get_child(), recMap) for n in edges
     ])
 
     nodePositions = np.unique(nodePositions, axis=1)
@@ -72,8 +72,8 @@ def plotGraph(recMap, edges, wall_positions, robot_pos):
     edgeLines = np.array(
         [
             [
-                fromNodeName(n[0], recMap),
-                fromNodeName(n[1], recMap)
+                fromNodeName(n.get_parent(), recMap),
+                fromNodeName(n.get_child(), recMap)
             ] for n in edges
         ]
     )
