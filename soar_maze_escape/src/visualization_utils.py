@@ -53,11 +53,11 @@ def plotGraph(recMap, edges, wall_positions, robot_pos):
         origin = recMap.info.origin.position
 
         # Convert grid indices (row, col) to Cartesian coordinates (x, y)
-        x_index, y_index = node
+        y_index, x_index = node
         x_cartesian = x_index * resolution + origin.x
         y_cartesian = y_index * resolution + origin.y
 
-        return (x_cartesian, y_cartesian)
+        return (y_cartesian, x_cartesian)
 
     # Get points on graph
     nodePositions = np.array([

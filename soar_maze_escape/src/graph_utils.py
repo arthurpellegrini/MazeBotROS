@@ -1,5 +1,3 @@
-import numpy as np
-
 # Nodes have these properties:
 #     Position
 class Node:
@@ -68,7 +66,7 @@ def find_edges(grid, start, nodes):
 
     return edges
 
-# Transform map to graph
+# # Transform map to graph
 def build_graph(grid):
     nodes = {}
     edges = []

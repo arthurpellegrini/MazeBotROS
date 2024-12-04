@@ -10,7 +10,7 @@ def main():
     rospy.init_node('moro_maze_navigation')
     recMap = getMap()
     freepoints, wallpoints = transformMap(recMap)
-    plotMap(freepoints, wallpoints)
+    # plotMap(freepoints, wallpoints)
 
     # Convert map to 2D grid
     grid = np.array(recMap.data).reshape((recMap.info.height, recMap.info.width))
@@ -27,7 +27,7 @@ def main():
     for edge in edges:
         print(edge)
 
-    robot_pos = (2, 1)
+    robot_pos = (1, 2) # (y, x)
     plotGraph(recMap, edges, wallpoints, robot_pos)
 
 if __name__ == "__main__":
