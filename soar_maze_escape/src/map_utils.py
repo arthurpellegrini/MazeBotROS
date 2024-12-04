@@ -15,6 +15,15 @@ def getMap() -> OccupancyGrid:
     recMap = recMap.map
     return recMap
 
+
+def convertMapToWorldCoordinates(y, x, recMap):
+    resolution = recMap.info.resolution
+    origin = recMap.info.origin.position
+    y_world = y * resolution + (origin.y + resolution / 2)
+    x_world = x * resolution + (origin.x + resolution / 2)
+    return y_world, x_world
+
+
 def transformMap(occupancy_grid: OccupancyGrid):
     """ Transforms the OccupancyGrid into Cartesian coordinates for free and wall points. """
     # Extract map data and metadata

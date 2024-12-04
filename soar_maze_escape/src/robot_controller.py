@@ -36,15 +36,7 @@ def publish_velocity(linear, angular):
     twist.linear.x = linear
     twist.angular.z = angular
     cmd_vel_pub.publish(twist)
-
-
-def convertMapToWorldCoordinates(y, x, recMap):
-    resolution = recMap.info.resolution
-    origin = recMap.info.origin.position
-    y_world = y * resolution + (origin.y + resolution / 2)
-    x_world = x * resolution + (origin.x + resolution / 2)
-    return y_world, x_world
-
+    
 
 def rotateTowardTarget(desired_theta, theta_robot):
     delta_theta = desired_theta - theta_robot
