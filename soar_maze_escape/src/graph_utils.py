@@ -80,9 +80,9 @@ def has_wall(grid, start, end):
     return False
 
 
-def find_neighbors(grid, x, y):
+def find_neighbors(grid, x, y, far_from=SIZE):
     neighbors = []
-    directions = [(-SIZE, 0), (SIZE, 0), (0, -SIZE), (0, SIZE)]
+    directions = [(-far_from, 0), (far_from, 0), (0, -far_from), (0, far_from)]
     for dx, dy in directions:
         nx, ny = x + dx, y + dy
         if 0 <= nx < grid.shape[1] and 0 <= ny < grid.shape[0]:
@@ -120,3 +120,52 @@ def build_graph(grid):
                             edges.append(Edge(nodes[(x, y)], nodes[(nx, ny)], cost=SIZE))
 
     return nodes, edges
+
+
+def add_exits(grid, nodes, edges):
+    """
+    Adds exit nodes to the graph by checking boundary nodes without walls towards the outside.
+    
+    Args:
+        grid (numpy.ndarray): The occupancy grid map.
+        nodes (dict): Existing nodes in the graph.
+        edges (list): Existing edges in the graph.
+    
+    Returns:
+        tuple: Updated nodes and edges with added exits.
+    """
+    height, width = grid.shape
+    # exits = []
+
+    def is_an_exit_neighbor(grid, nodes, x, y):
+        # Find neighbors and create edges
+        for nx, ny in find_neighbors(grid, x, y, 4):
+            if (nx, ny) in nodes:
+                if not has_wall(grid, (x, y), (nx, ny)):
+                    node_exit = Node((x, y))
+                    return Edge(node_exit, nodes[(nx, ny)], cost=SIZE)
+        return None
+
+    for x in range(width):
+        if grid[0, x] == 0:
+            exit = is_an_exit_neighbor(grid, nodes, x, 0)
+            if exit:
+                edges.append(exit)
+        if grid[height - 1, x] == 0:
+            exit = is_an_exit_neighbor(grid, nodes, x, height - 1)
+            if exit:
+                edges.append(exit)
+
+    for y in range(height):
+        if grid[y, 0] == 0:
+            exit = is_an_exit_neighbor(grid, nodes, 0, y)
+            if exit:
+                edges.append(exit)
+        if grid[y, width - 1] == 0:
+            exit = is_an_exit_neighbor(grid, nodes, width - 1, y)
+            if exit:
+                edges.append(exit)
+
+
+    return nodes, edges
+
