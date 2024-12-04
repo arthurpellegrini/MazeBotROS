@@ -5,6 +5,7 @@ from scipy.spatial.transform import Rotation as R
 from visualization_msgs.msg import Marker
 from geometry_msgs.msg import Point
 from geometry_msgs.msg import Twist
+from map_utils import convertMapToWorldCoordinates
 
 cmd_vel_pub = rospy.Publisher('/cmd_vel', Twist, queue_size=10)
 
@@ -36,7 +37,7 @@ def publish_velocity(linear, angular):
     twist.linear.x = linear
     twist.angular.z = angular
     cmd_vel_pub.publish(twist)
-    
+
 
 def rotateTowardTarget(desired_theta, theta_robot):
     delta_theta = desired_theta - theta_robot
