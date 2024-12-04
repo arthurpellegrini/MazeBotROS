@@ -36,14 +36,14 @@ def is_node(grid, x, y):
     # A node has more than 2 free neighbors or is a dead end
     return free_neighbors != 2
 
-# Find neighbors in free space
-def find_neighbors(grid, x, y):
-    neighbors = []
-    for dx, dy in [(-1, 0), (1, 0), (0, -1), (0, 1)]:
-        nx, ny = x + dx, y + dy
-        if 0 <= nx < grid.shape[0] and 0 <= ny < grid.shape[1] and grid[nx, ny] == 0:
-            neighbors.append((nx, ny))
-    return neighbors
+# # Find neighbors in free space
+# def find_neighbors(grid, x, y):
+#     neighbors = []
+#     for dx, dy in [(-5, 0), (5, 0), (0, -5), (0, 5)]:
+#         nx, ny = x + dx, y + dy
+#         if 0 <= nx < grid.shape[1] and 0 <= ny < grid.shape[0] and grid[ny, nx] == 0:
+#             neighbors.append((nx, ny))
+#     return neighbors
 
 # Perform BFS/DFS to find edges between nodes
 def find_edges(grid, start, nodes):
@@ -66,18 +66,40 @@ def find_edges(grid, start, nodes):
 
     return edges
 
-# # Transform map to graph
+def has_wall(grid, start, end):
+    x1, y1 = start
+    x2, y2 = end
+    if x1 == x2:
+        step = 6 if y2 > y1 else -6
+        for y in range(y1, y2, step):
+            if grid[y, x1] == 1:
+                return True
+    elif y1 == y2:
+        step = 6 if x2 > x1 else -6
+        for x in range(x1, x2, step):
+            if grid[y1, x] == 1:
+                return True
+    return False
+
+def find_neighbors(grid, x, y):
+    neighbors = []
+    directions = [(-6, 0), (6, 0), (0, -6), (0, 6)]
+    for dx, dy in directions:
+        nx, ny = x + dx, y + dy
+        if 0 <= nx < grid.shape[1] and 0 <= ny < grid.shape[0]:
+            if grid[ny, nx] == 0 and not has_wall(grid, (x, y), (nx, ny)):
+                neighbors.append((nx, ny))
+    return neighbors
+
 def build_graph(grid):
     nodes = {}
     edges = []
-    for y in range(grid.shape[0]):
-        for x in range(grid.shape[1]):
-            if grid[y, x] == 0:  # Assuming 0 represents a free point
+    for y in range(4, grid.shape[0]-1, 6):
+        for x in range(4, grid.shape[1]-1, 6):
+            if grid[y, x] == 0:  # Pas de mur sur le nœud
                 node = Node((x, y))
                 nodes[(x, y)] = node
-                # Add edges (this is just an example, you need to implement the actual logic)
-                if (x-1, y) in nodes:
-                    edges.append(((x-1, y), (x, y)))
-                if (x, y-1) in nodes:
-                    edges.append(((x, y-1), (x, y)))
+                for nx, ny in find_neighbors(grid, x, y):
+                    if (nx, ny) in nodes:
+                        edges.append(((x, y), (nx, ny)))
     return nodes, edges

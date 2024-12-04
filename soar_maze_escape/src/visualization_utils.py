@@ -54,8 +54,8 @@ def plotGraph(recMap, edges, wall_positions, robot_pos):
 
         # Convert grid indices (row, col) to Cartesian coordinates (x, y)
         y_index, x_index = node
-        x_cartesian = x_index * resolution + origin.x
-        y_cartesian = y_index * resolution + origin.y
+        x_cartesian = x_index * resolution + (origin.x + resolution/2)
+        y_cartesian = y_index * resolution + (origin.y + resolution/2)
 
         return (y_cartesian, x_cartesian)
 

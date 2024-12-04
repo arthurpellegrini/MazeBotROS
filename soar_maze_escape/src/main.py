@@ -7,7 +7,7 @@ from visualization_utils import plotMap, plotGraph
 import numpy as np
 
 def main():
-    rospy.init_node('moro_maze_navigation')
+    rospy.init_node("moro_maze_navigation")
     recMap = getMap()
     freepoints, wallpoints = transformMap(recMap)
     # plotMap(freepoints, wallpoints)
@@ -17,6 +17,17 @@ def main():
 
     # Build graph
     nodes, edges = build_graph(grid)
+
+    # edges = [((4, 4), (10,4)), 
+    #         ((4,10), (10,10)),
+    #         ((4,16), (4,22)),
+    #         ((4,22), (10,22)),
+    #         ((10,4), (10,10)),
+    #         ((10,10), (10,16)),
+    #         ((10,16), (16,16)),
+    #         ((10,16), (10,22)),
+    #         ((16,4), (16,10)),
+    #         ((16,10), (22,10))]
 
     # Print nodes and edges
     print("Nodes:")
