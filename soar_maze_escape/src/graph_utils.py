@@ -1,3 +1,6 @@
+PADDING = 4
+SIZE = 6
+
 # Nodes have these properties:
 #     Position
 class Node:
@@ -70,12 +73,12 @@ def has_wall(grid, start, end):
     x1, y1 = start
     x2, y2 = end
     if x1 == x2:
-        step = 6 if y2 > y1 else -6
+        step = SIZE if y2 > y1 else -SIZE
         for y in range(y1, y2, step):
             if grid[y, x1] == 1:
                 return True
     elif y1 == y2:
-        step = 6 if x2 > x1 else -6
+        step = SIZE if x2 > x1 else -SIZE
         for x in range(x1, x2, step):
             if grid[y1, x] == 1:
                 return True
@@ -83,7 +86,7 @@ def has_wall(grid, start, end):
 
 def find_neighbors(grid, x, y):
     neighbors = []
-    directions = [(-6, 0), (6, 0), (0, -6), (0, 6)]
+    directions = [(-SIZE, 0), (SIZE, 0), (0, -SIZE), (0, SIZE)]
     for dx, dy in directions:
         nx, ny = x + dx, y + dy
         if 0 <= nx < grid.shape[1] and 0 <= ny < grid.shape[0]:
@@ -94,8 +97,8 @@ def find_neighbors(grid, x, y):
 def build_graph(grid):
     nodes = {}
     edges = []
-    for y in range(4, grid.shape[0]-1, 6):
-        for x in range(4, grid.shape[1]-1, 6):
+    for y in range(PADDING, grid.shape[0]-1, SIZE):
+        for x in range(PADDING, grid.shape[1]-1, SIZE):
             if grid[y, x] == 0:  # Pas de mur sur le nœud
                 node = Node((x, y))
                 nodes[(x, y)] = node
