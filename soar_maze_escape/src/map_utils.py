@@ -23,6 +23,14 @@ def convertMapToWorldCoordinates(y, x, recMap):
     x_world = x * resolution + (origin.x + resolution / 2)
     return y_world, x_world
 
+def convertWorldToGrid(y_world, x_world, recMap):
+    resolution = recMap.info.resolution
+    origin = recMap.info.origin.position
+
+    y_grid = int((y_world - origin.y) / resolution)
+    x_grid = int((x_world - origin.x) / resolution)
+
+    return y_grid, x_grid
 
 def transformMap(occupancy_grid: OccupancyGrid):
     """ Transforms the OccupancyGrid into Cartesian coordinates for free and wall points. """

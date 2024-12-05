@@ -2,7 +2,8 @@ PADDING = 4
 SIZE = 6
 
 import numpy as np
-
+from map_utils import convertWorldToGrid
+ 
 # Node class represents a graph node with a position
 class Node:
     def __init__(self, position):
@@ -169,3 +170,30 @@ def findExits(grid: np.array, nodes: list) -> list:
 
     return tmp_nodes, finded_exits
 
+def findClosestNode(robot_pos_world, edges, recMap):
+   
+    y_robot, x_robot = robot_pos_world[:2]
+    y_robot_grid, x_robot_grid = convertWorldToGrid(y_robot, x_robot, recMap)
+
+    # We take edges parent and child nodes to find the closest node
+    min_distance = float("inf")
+    closest_node = None
+    for edge in edges:
+        parent = edge.parent
+        child = edge.child
+        y_parent, x_parent = parent.position
+        y_child, x_child = child.position   
+
+        # We calculate the distance from the robot to the parent
+        distance_to_parent = np.sqrt((np.square(y_robot_grid - y_parent) + np.square(x_robot_grid - x_parent)))
+        if distance_to_parent < min_distance:
+            min_distance = distance_to_parent
+            closest_node = parent
+
+        # We calculate the distance from the robot to the child
+        distance_to_child = np.sqrt((np.square(y_robot_grid - y_child) + np.square(x_robot_grid - x_child)))
+        if distance_to_child < min_distance:
+            min_distance = distance_to_child
+            closest_node = child
+
+    return closest_node
