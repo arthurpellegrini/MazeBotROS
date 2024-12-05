@@ -76,7 +76,7 @@ def markerToDebug(y_target, x_target):
 
 def goToNode(current_pose, target_node, recMap):
     y_r, x_r, theta_r = current_pose
-    y_node, x_node = target_node.get_position()
+    y_node, x_node = target_node.position
     y_target, x_target = convertMapToWorldCoordinates(y_node, x_node, recMap)
     
     markerToDebug(y_target, x_target)

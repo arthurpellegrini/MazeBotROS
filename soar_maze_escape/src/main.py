@@ -4,7 +4,7 @@ import rospy
 from map_utils import getMap, transformMap
 from graph_utils import buildGraph, addExits
 from visualization_utils import plotMap, plotGraph
-from robot_controller import localiseRobot
+from robot_controller import localiseRobot, goToNode
 import numpy as np
 
 def main():
@@ -27,6 +27,9 @@ def main():
     robot_pos = localiseRobot()
     print("robot pose",robot_pos)
     plotGraph(recMap, edges, wallpoints, robot_pos)
+
+    # exemple node ([y, x])
+    goToNode(robot_pos, edges[0].parent, recMap)
 
 if __name__ == "__main__":
     main()
