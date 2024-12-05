@@ -2,7 +2,7 @@
 
 import rospy
 from map_utils import getMap, transformMap
-from graph_utils import buildGraph, addExits
+from graph_utils import buildGraph, findExits
 from visualization_utils import plotMap, plotGraph
 from robot_controller import localiseRobot, goToNode
 import numpy as np
@@ -22,7 +22,8 @@ def main():
         print(edge)
 
     # Add exits to the graph
-    nodes, edges = addExits(grid, nodes, edges)
+    nodes, find_exits = findExits(grid, nodes)
+    edges += find_exits
 
     robot_pos = localiseRobot()
     print("robot pose",robot_pos)

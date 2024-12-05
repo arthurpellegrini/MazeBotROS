@@ -125,22 +125,23 @@ def buildGraph(grid: np.array) -> tuple:
 
     return nodes, edges
 
-# Adds exit nodes and edges to the graph
-def addExits(grid: np.array, nodes: list, edges: list) -> tuple:
+# Find exit nodes inside the map
+def findExits(grid: np.array, nodes: list) -> list:
     """
-    Adds exit nodes to the graph by checking boundary nodes without walls towards the outside.
+    Find exit nodes to the graph by checking boundary nodes without walls towards the outside.
 
     Args:
         grid (np.array): 2D grid representing the map
         nodes (list[Node]): List of nodes in the graph
-        edges (list[Edge]): List of edges in the graph
     
     Returns:
-        (tuple[list[Node], list[Edge]]): Updated nodes and edges with exit nodes and edges
+        (list[Edge]): List of nodes in the graph with exit nodes
     """
         
 
     height, width = grid.shape
+    finded_exits = []
+    tmp_nodes = nodes.copy()
 
     for x in range(width):
         # Check top and bottom boundaries
@@ -149,8 +150,9 @@ def addExits(grid: np.array, nodes: list, edges: list) -> tuple:
                 for neighbor_x, neighbor_y in findNeighbors(grid, x, y, distance=4):
                     if (neighbor_x, neighbor_y) in nodes:
                         exit_node = Node((x, y))
-                        edges.append(
-                            Edge(exit_node, nodes[(neighbor_x, neighbor_y)], cost=SIZE)
+                        tmp_nodes[(x, y)] = exit_node
+                        finded_exits.append(
+                            Edge(nodes[(neighbor_x, neighbor_y)], exit_node, cost=SIZE)
                         )
 
     for y in range(height):
@@ -160,9 +162,10 @@ def addExits(grid: np.array, nodes: list, edges: list) -> tuple:
                 for neighbor_x, neighbor_y in findNeighbors(grid, x, y, distance=4):
                     if (neighbor_x, neighbor_y) in nodes:
                         exit_node = Node((x, y))
-                        edges.append(
-                            Edge(exit_node, nodes[(neighbor_x, neighbor_y)], cost=SIZE)
+                        tmp_nodes[(x, y)] = exit_node
+                        finded_exits.append(
+                            Edge(nodes[(neighbor_x, neighbor_y)], exit_node, cost=SIZE)
                         )
 
-    return nodes, edges
+    return tmp_nodes, finded_exits
 
