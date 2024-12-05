@@ -1,6 +1,8 @@
 import numpy as np
 import matplotlib.pyplot as plt
 
+from map_utils import convertMapToWorldCoordinates
+
 
 # Store colors matching UAS TW colour scheme as dict 
 COLOR_SCHEME = {
@@ -48,22 +50,11 @@ def plotGraph(recMap, edges, wall_positions, robot_pos):
     plt.rcParams['figure.figsize'] = [7, 7]
     fig, ax = plt.subplots()
 
-    def fromNodeName(node, recMap):
-        resolution = recMap.info.resolution
-        origin = recMap.info.origin.position
-
-        # Convert grid indices (row, col) to Cartesian coordinates (x, y)
-        y_index, x_index = node.position
-        x_cartesian = x_index * resolution + (origin.x + resolution/2)
-        y_cartesian = y_index * resolution + (origin.y + resolution/2)
-
-        return (y_cartesian, x_cartesian)
-
     # Get points on graph
     nodePositions = np.array([
-        fromNodeName(n.parent, recMap) for n in edges
-    ] + [
-        fromNodeName(n.child, recMap) for n in edges
+        convertMapToWorldCoordinates(n.parent.position[0], n.parent.position[1], recMap) for n in edges
+        ] + [
+        convertMapToWorldCoordinates(n.child.position[0], n.child.position[1], recMap) for n in edges
     ])
 
     nodePositions = np.unique(nodePositions, axis=1)
@@ -72,8 +63,8 @@ def plotGraph(recMap, edges, wall_positions, robot_pos):
     edgeLines = np.array(
         [
             [
-                fromNodeName(n.parent, recMap),
-                fromNodeName(n.child, recMap)
+                convertMapToWorldCoordinates(n.parent.position[0], n.parent.position[1], recMap),
+                convertMapToWorldCoordinates(n.child.position[0], n.child.position[1], recMap)
             ] for n in edges
         ]
     )
