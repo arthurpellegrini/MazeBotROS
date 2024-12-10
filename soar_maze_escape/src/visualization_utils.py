@@ -2,6 +2,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 from map_utils import convertMapToWorldCoordinates
+from graph_utils import Node
 
 
 # Store colors matching UAS TW colour scheme as dict 
@@ -101,3 +102,62 @@ def plotGraph(recMap, edges, wall_positions, robot_pos):
     # Show plot
     plt.show()
 
+
+def plotNodePositionGraph(recMap, nodes, edges, wall_positions, robot_pos):
+    ## Visualise maze and generated graph
+    # Create single figure
+    plt.rcParams['figure.figsize'] = [7, 7]
+    fig, ax = plt.subplots()
+
+    # Convert node positions to world coordinates
+    nodePositions = np.array([
+        convertMapToWorldCoordinates(n[1], n[0], recMap) for n in nodes
+    ])
+
+    edgeLines = np.array(
+        [
+            [
+                convertMapToWorldCoordinates(n.parent.position[0], n.parent.position[1], recMap),
+                convertMapToWorldCoordinates(n.child.position[0], n.child.position[1], recMap)
+            ] for n in edges
+        ]
+    )
+    
+    # Plot data as points (=scatterplot) and label accordingly. The colours are defined to look nice with UAS TW colours
+    ax.scatter(wall_positions[:,1], wall_positions[:,0], c=COLOR_SCHEME["darkblue"], alpha=1.0, s=6**2, label="Walls")
+    ax.scatter(nodePositions[:,1], nodePositions[:,0], c=COLOR_SCHEME["twblue"], alpha=1.0, s=8**2, label="Graph")
+
+    for i, node in enumerate(nodes):
+        x_pos = nodePositions[i][1]
+        y_pos = nodePositions[i][0] + 0.1
+        ax.text(x_pos, y_pos, f"{node}", fontsize=10, bbox=dict(facecolor=COLOR_SCHEME["lightblue"], alpha=0.5), color=COLOR_SCHEME["twblue"])
+        
+     # Plot lines connecting nodes
+    for line in edgeLines:
+        x0, y0 = line[0]
+        x1, y1 = line[1]
+        x = [x0, x1]
+        y = [y0, y1]
+        ax.plot(x, y, c=COLOR_SCHEME["twblue"])
+    
+    ax.scatter([robot_pos[1]], [robot_pos[0]], c=COLOR_SCHEME["twgrey"], s=15**2, label="Robot Position")
+
+
+    # Set axes labels and figure title
+    ax.set_xlabel("X-Coordinate [m]")
+    ax.set_ylabel("Y-Coordinate [m]")
+    ax.set_title("Graph Generated based on Map Data")
+
+    # Set grid to only plot each metre
+    ax.set_xticks = [-1, 0, 1, 2, 3, 4 ]
+    ax.set_yticks = [-1, 0, 1, 2, 3, 4 ]
+
+    # Move grid behind points
+    ax.set_axisbelow(True)
+    ax.grid()
+
+    # Add labels
+    ax.legend()
+
+    # Show plot
+    plt.show()

@@ -76,7 +76,7 @@ def markerToDebug(y_target, x_target):
 
 def goToNode(current_pose, target_node, recMap):
     y_r, x_r, theta_r = current_pose
-    y_node, x_node = target_node.position
+    x_node, y_node  = target_node.position
     y_target, x_target = convertMapToWorldCoordinates(y_node, x_node, recMap)
     
     markerToDebug(y_target, x_target)
@@ -104,5 +104,6 @@ def goToNode(current_pose, target_node, recMap):
     # Stopper le robot
     publish_velocity(0.0, 0.0)
     rospy.loginfo("Robot arrived at target node")
+    return current_pose
 
 

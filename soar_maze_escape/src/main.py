@@ -3,7 +3,7 @@
 import rospy
 from map_utils import getMap, transformMap
 from graph_utils import buildGraph, findExits
-from visualization_utils import plotMap, plotGraph
+from visualization_utils import plotMap, plotGraph, plotNodePositionGraph
 from robot_controller import localiseRobot, goToNode
 import numpy as np
 
@@ -27,10 +27,18 @@ def main():
 
     robot_pos = localiseRobot()
     print("robot pose",robot_pos)
-    plotGraph(recMap, edges, wallpoints, robot_pos)
+    # plotGraph(recMap, edges, wallpoints, robot_pos)
+    plotNodePositionGraph(recMap, nodes, edges, wallpoints, robot_pos)
 
     # exemple node ([y, x])
-    goToNode(robot_pos, edges[0].parent, recMap)
+    # new_robot_pos = [0, 0, 0]
+    # for edge in edges:
+    #     print(edge.parent.position)
+    #     if(edge.parent.position == (22, 10)):
+    #             new_robot_pos = goToNode(robot_pos, edge.parent, recMap)
+    #             print("new_robot_pos", new_robot_pos)
+    #     if(new_robot_pos != [0,0,0] and edge.parent.position == (22, 22)):
+    #         goToNode(new_robot_pos, edge.parent, recMap)
 
 if __name__ == "__main__":
     main()
