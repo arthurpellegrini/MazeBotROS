@@ -9,6 +9,9 @@ class Node:
     def __init__(self, position):
         self.position = position
 
+    def __eq__(self, other):
+        return self.position == other.position
+
     def __str__(self):
         return f"{self.position[0]}.{self.position[1]}"
 
@@ -161,8 +164,8 @@ def findClosestNode(robot_pos_world, edges, recMap):
     for edge in edges:
         parent = edge.parent
         child = edge.child
-        y_parent, x_parent = parent.position
-        y_child, x_child = child.position   
+        x_parent, y_parent = parent.position
+        x_child, y_child = child.position   
 
         # We calculate the distance from the robot to the parent
         distance_to_parent = np.sqrt((np.square(y_robot_grid - y_parent) + np.square(x_robot_grid - x_parent)))
@@ -177,3 +180,67 @@ def findClosestNode(robot_pos_world, edges, recMap):
             closest_node = child
 
     return closest_node
+
+
+import heapq  # For priority queue
+
+def heuristic(a, b):
+    """Calculate the heuristic (Euclidean distance) between two points."""
+    return np.linalg.norm(np.array(a) - np.array(b))
+
+def a_star_search(grid, nodes, edges, start, goal):
+    """
+    Perform A* search on the graph to find the shortest path.
+    
+    Args:
+        grid (np.array): 2D grid representing the map.
+        nodes (dict): Dictionary of nodes in the graph.
+        edges (list[Edge]): List of edges in the graph.
+        start (tuple): Starting node position (x, y).
+        goal (tuple): Goal node position (x, y).
+    
+    Returns:
+        list[tuple]: The shortest path as a list of node positions.
+    """
+    open_set = []
+    start = start.position
+    goal = goal.position
+
+    heapq.heappush(open_set, (0, start))  # Priority queue with (cost, node)
+    
+    came_from = {}  # Track the path
+    g_score = {node: float('inf') for node in nodes}
+    g_score[start] = 0
+    
+    f_score = {node: float('inf') for node in nodes}
+    f_score[start] = heuristic(start, goal)
+    
+    while open_set:
+        _, current = heapq.heappop(open_set)
+        
+        if current == goal:
+            # Reconstruct path
+            path = []
+            while current in came_from:
+                path.append(current)
+                current = came_from[current]
+            path.append(start)
+            return path[::-1]  # Reverse the path
+        
+        for edge in edges:
+            if edge.parent.position == current:
+                neighbor = edge.child.position
+            elif edge.child.position == current:
+                neighbor = edge.parent.position
+            else:
+                continue
+            
+            tentative_g_score = g_score[current] + edge.cost
+            if tentative_g_score < g_score[neighbor]:
+                came_from[neighbor] = current
+                g_score[neighbor] = tentative_g_score
+                f_score[neighbor] = g_score[neighbor] + heuristic(neighbor, goal)
+                if neighbor not in [node for _, node in open_set]:
+                    heapq.heappush(open_set, (f_score[neighbor], neighbor))
+    
+    return []  # No path found

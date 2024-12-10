@@ -2,7 +2,7 @@
 
 import rospy
 from map_utils import getMap, transformMap
-from graph_utils import buildGraph, findExits
+from graph_utils import buildGraph, findExits, a_star_search, findClosestNode, Node
 from visualization_utils import plotMap, plotGraph, plotNodePositionGraph
 from robot_controller import localiseRobot, goToNode
 import numpy as np
@@ -31,6 +31,28 @@ def main():
     print("robot pose",robot_pos)
     # plotGraph(recMap, edges, wallpoints, robot_pos)
     plotNodePositionGraph(recMap, nodes, edges, wallpoints, robot_pos)
+
+    start_node = findClosestNode(robot_pos, edges, recMap)
+
+    for pos in nodes:
+        if start_node.position == nodes[pos].position:
+            start_exits = True
+
+    if start_exits:
+        paths = [a_star_search(grid, nodes, edges, start_node, exit.child) for exit in find_exits]
+
+        print("Paths found:", paths)
+
+        # Get the path with the lower number of steps
+        path = min(paths, key=lambda x: len(x)) if paths else None
+
+        print("Path found:", path)
+        # Optional: Visualize path
+        for step in path:
+            print(f"Step: {step}")
+    else:
+        print("Start or goal node is invalid.")
+
 
     # exemple node ([y, x])
     # new_robot_pos = [0, 0, 0]
