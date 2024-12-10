@@ -41,15 +41,16 @@ def main():
     if start_exits:
         paths = [a_star_search(grid, nodes, edges, start_node, exit.child) for exit in find_exits]
 
-        print("Paths found:", paths)
+        print("Paths found:", [[step.position for step in path] for path in paths])
 
         # Get the path with the lower number of steps
         path = min(paths, key=lambda x: len(x)) if paths else None
 
-        print("Path found:", path)
+        print("Path found:", [step.position for step in path])
         # Optional: Visualize path
         for step in path:
             print(f"Step: {step}")
+            robot_pos = goToNode(robot_pos, step, recMap)
     else:
         print("Start or goal node is invalid.")
 
