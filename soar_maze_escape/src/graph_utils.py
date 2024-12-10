@@ -22,30 +22,6 @@ class Edge:
     def __str__(self):
         return f"{{'parent': '{self.parent}', 'child': '{self.child}'}}"
 
-# Determines if a grid cell is a node (intersection, dead end, etc.)
-def isNode(grid: np.array, x: int, y: int) -> bool:
-    """
-    Determines if a grid cell is a node (intersection, dead end, etc.)
-    
-    Args:
-        grid (np.array): 2D grid representing the map
-        x (int): x-coordinate of the cell
-        y (int): y-coordinate of the cell
-        
-    Returns:
-        (bool): True if the cell is a node, False otherwise
-    """
-    if grid[x, y] != 0:  # Not free space
-        return False
-
-    neighbors = [(x - 1, y), (x + 1, y), (x, y - 1), (x, y + 1)]
-    free_neighbors = sum(
-        0 <= nx < grid.shape[0] and 0 <= ny < grid.shape[1] and grid[nx, ny] == 0
-        for nx, ny in neighbors
-    )
-
-    # A node has more than 2 free neighbors or is a dead end
-    return free_neighbors != 2
 
 # Checks if a wall exists between two points
 def hasWall(grid: np.array, start, end) -> bool:
@@ -75,6 +51,7 @@ def hasWall(grid: np.array, start, end) -> bool:
 
     return False
 
+
 # Finds neighbors of a node based on grid constraints and connectivity
 def findNeighbors(grid: np.array, x: int, y: int, distance: int=SIZE) -> list:
     """
@@ -97,6 +74,7 @@ def findNeighbors(grid: np.array, x: int, y: int, distance: int=SIZE) -> list:
             if not hasWall(grid, (x, y), (nx, ny)):
                 neighbors.append((nx, ny))
     return neighbors
+
 
 # Builds a graph from a 2D grid
 def buildGraph(grid: np.array) -> tuple:
@@ -125,6 +103,7 @@ def buildGraph(grid: np.array) -> tuple:
                         )
 
     return nodes, edges
+
 
 # Find exit nodes inside the map
 def findExits(grid: np.array, nodes: list) -> list:
@@ -169,6 +148,7 @@ def findExits(grid: np.array, nodes: list) -> list:
                         )
 
     return tmp_nodes, finded_exits
+
 
 def findClosestNode(robot_pos_world, edges, recMap):
    
