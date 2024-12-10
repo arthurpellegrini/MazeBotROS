@@ -18,12 +18,14 @@ def main():
 
     # Build graph
     nodes, edges = buildGraph(grid)
-    for edge in edges:
-        print(edge)
 
     # Add exits to the graph
     nodes, find_exits = findExits(grid, nodes)
     edges += find_exits
+
+    print("Nodes:", len(nodes), "- Edges:", len(edges))
+    for edge in edges:
+        print(edge)
 
     robot_pos = localiseRobot()
     print("robot pose",robot_pos)
