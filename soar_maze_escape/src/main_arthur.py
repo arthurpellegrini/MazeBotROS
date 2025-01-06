@@ -4,7 +4,7 @@ import rospy
 from map_utils import getMap, transformMap
 from graph_utils import buildGraph, findExits, findClosestNode, a_star_search, path_reconstrcution
 from visualization_utils import plotMap, plotGraph, plotNodePositionGraph
-from robot_controller import localiseRobot, goToNode
+from robot_controller import localiseRobot, goToNode, generateControls
 import numpy as np
 
 def main():
@@ -49,6 +49,12 @@ def main():
         print("Global path:", global_path)
     else:
         print("Start or goal node is invalid.")
+
+    last_control = np.array([0, 0])
+    controls = generateControls(last_control)
+    print(controls)
+    print("---")
+    print(controls.shape)
 
 
     # exemple node ([y, x])

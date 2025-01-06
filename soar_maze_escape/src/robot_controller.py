@@ -1,5 +1,6 @@
 import rospy
 import numpy as np
+import numpy.typing as npt
 import tf2_ros
 from scipy.spatial.transform import Rotation as R
 from visualization_msgs.msg import Marker
@@ -67,6 +68,30 @@ def transform_goal_relative_to_robot(robot_pose, goal_pose):
     return relative_pose
 
 
+def generateControls(lastControl: npt.ArrayLike) -> np.ndarray:
+    """
+    Generates a list of possible (vt, wt) pairs that lead the robot towards the next goal.
+    The generated control signals do not deviate too far from the last applied control.
+    """
+    vt_min, vt_max = -0.025, 0.025  # Min and max linear velocities
+    wt_min, wt_max = -1.4, 1.4  # Min and max angular velocities
+    vt_step, wt_step = 0.0115, 0.025  # Steps for linear and angular velocities
+
+    vt_range = np.arange(vt_min, vt_max + vt_step, vt_step)
+    wt_range = np.arange(wt_min, wt_max + wt_step, wt_step)
+
+    controls = np.array([[vt, wt] for vt in vt_range for wt in wt_range])
+
+    # Filter controls to ensure they do not deviate too far from the last applied control
+    max_vt_deviation = 0.05
+    max_wt_deviation = 1.4
+
+    valid_controls = controls[
+        (np.abs(controls[:, 0] - lastControl[0]) <= max_vt_deviation) &
+        (np.abs(controls[:, 1] - lastControl[1]) <= max_wt_deviation)
+    ]
+
+    return valid_controls
 
 
 def publish_velocity(linear, angular):
