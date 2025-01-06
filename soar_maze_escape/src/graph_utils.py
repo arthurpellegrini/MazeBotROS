@@ -244,3 +244,25 @@ def a_star_search(grid, nodes, edges, start, goal):
     
     return []  # No path found
 
+
+def path_reconstrcution(path):
+    # Add rotation for each step
+    global_path = []
+
+    for i in range(0, len(path)):
+        if i == 0:
+            current_node = path[i]
+        else:
+            current_node = path[i - 1]
+        next_node = path[i]
+        # print(f"From {current_node.position} to {next_node.position}")
+        
+        # Compute the rotation
+        dx = next_node.position[0] - current_node.position[0]
+        dy = next_node.position[1] - current_node.position[1]
+        
+        rotation = np.arctan2(dy, dx)  # For other directions
+        
+        global_path.append((next_node.position[0], next_node.position[1], rotation))
+    
+    return global_path

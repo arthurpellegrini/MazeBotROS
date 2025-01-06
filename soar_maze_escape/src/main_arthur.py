@@ -2,7 +2,7 @@
 
 import rospy
 from map_utils import getMap, transformMap
-from graph_utils import buildGraph, findExits, a_star_search, findClosestNode, Node
+from graph_utils import buildGraph, findExits, findClosestNode, a_star_search, path_reconstrcution
 from visualization_utils import plotMap, plotGraph, plotNodePositionGraph
 from robot_controller import localiseRobot, goToNode
 import numpy as np
@@ -41,26 +41,11 @@ def main():
 
     if start_exits:
         paths = [a_star_search(grid, nodes, edges, start_node, exit.child) for exit in find_exits]
-
         print("Paths found:", [[step.position for step in path] for path in paths])
-
         # Get the path with the lower number of steps
         path = min(paths, key=lambda x: len(x)) if paths else None
-
         print("Path found:", [step.position for step in path])
-
-        # Add rotation for each step
-        global_path = []
-
-        for i in range(1, len(path)):
-            current_node = path[i - 1]
-            next_node = path[i]
-            print(f"From {current_node.position} to {next_node.position}")
-            # Compute the rotation
-            rotation = np.arctan2(next_node.position[0] - current_node.position[0], next_node.position[1] - current_node.position[1])
-            global_path.append((next_node.position[1], next_node.position[0], rotation))
-            # robot_pos = goToNode(robot_pos, next_node, recMap)
-        
+        global_path = path_reconstrcution(path)
         print("Global path:", global_path)
     else:
         print("Start or goal node is invalid.")
