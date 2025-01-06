@@ -249,3 +249,55 @@ def plotTransformGoadAndRobotPoseGraph(goalpose, wallPositions):
 
     # Show plot
     plt.show()
+    
+    
+def plotEvaluatedTrajectoriesGraph(goalpose, wallPositions, trajectories, costs):
+    plt.rcParams['figure.figsize'] = [7, 7]
+    fig, ax = plt.subplots()
+
+    # Plot robot poses as arrows to indicate orientation
+    poses = [[0,0,0], goalpose.tolist()]
+    labels = ["Robot Pose", "Goal Pose"]
+    colours = [COLOR_SCHEME["lightblue"], COLOR_SCHEME["darkblue"]]
+
+    for s, l, c in zip(poses, labels, colours):
+        # Calculate arrow's dx and dy from s = [x, y, theta]
+        p2 = np.array([np.cos(s[2]), np.sin(s[2])])
+        # Scale arrow length and draw
+        p2 /= np.linalg.norm(p2)*4
+        ax.arrow(s[0], s[1], p2[0], p2[1], width=0.02, label=l, color=c)
+
+    # Plot walls (from Step 1, if the variable exists)
+    if 'wallPositions' in locals():
+        try: ax.scatter(wallPositions[:,1], wallPositions[:,0], c=COLOR_SCHEME["darkblue"], alpha=1.0, s=6**2, label="Walls")
+        except: pass
+
+    # Plot trajectories and shade with costs
+    costs_scaled = (costs - costs.min())/(costs.max() - costs.min()) # Scales cost from 0-1 and emphasises low costs
+    costs_inverted = 1-costs_scaled
+    costs_emphasis = np.exp(3*costs_inverted-3)
+
+    for traj, cost in zip(trajectories, costs_emphasis):
+        traj = np.array(traj)
+        ax.plot(traj[:,0], traj[:,1], c=COLOR_SCHEME["darkblue"], alpha=(cost))
+
+    # Set axes labels and figure title
+    ax.set_xlabel("X-Coordinate (Robot Coordinate System) [m]")
+    ax.set_ylabel("Y-Coordinate (Robot Coordinate System [m]")
+    ax.set_title("Evaluated Trajectories Shaded with Cost")
+
+    # Set grid to only plot each metre
+    ax.set_xticks = [-1, 0, 1]
+    ax.set_yticks = [-1, 0, 1]
+    ax.set_xlim(-0, 1.5)
+    ax.set_ylim(-0.5, 1)
+
+    # Move grid behind points
+    ax.set_axisbelow(True)
+    ax.grid()
+
+    # Add labels
+    ax.legend()
+
+    # Show plot
+    plt.show()

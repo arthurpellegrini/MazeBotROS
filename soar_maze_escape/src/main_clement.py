@@ -3,8 +3,8 @@
 import rospy
 from map_utils import getMap, transformMap
 from graph_utils import buildGraph, findExits, a_star_search, findClosestNode, Node
-from visualization_utils import plotMap, plotGraph, plotNodePositionGraph, plotArrowPathGraph, plotTransformGoadAndRobotPoseGraph
-from robot_controller import localiseRobot, goToNode, transform_goal_relative_to_robot
+from visualization_utils import plotEvaluatedTrajectoriesGraph, plotMap, plotGraph, plotNodePositionGraph, plotArrowPathGraph, plotTransformGoadAndRobotPoseGraph
+from robot_controller import PT2Block, evaluateControls, localiseRobot, goToNode, transform_goal_relative_to_robot
 import numpy as np
 
 def main():
@@ -49,8 +49,23 @@ def main():
     plotArrowPathGraph(robot_pos, global_path, wallpoints)
     goalpose = transform_goal_relative_to_robot(robot_pos,global_path[current_goal_ID])
     print("goal pose",goalpose)
+
+    controls = [
+    [-0.025, -1.4],
+    [-0.0135, -1.4],
+    [-0.002, -1.4],
+    [ 0.0095,  1.4],
+    [ 0.021,  1.4],
+    [ 0.0325,  1.4]] # example data
+    
+    ts = 1/2 # Sampling time [sec] -> 2Hz
+    horizon = 10 # Number of time steps to simulate. 10*0.5 sec = 5 seconds lookahead into the future
+    robotModelPT2 = PT2Block(ts=ts, T=0.05, D=0.8)
+    costs, trajectories = evaluateControls(controls, robotModelPT2, 70, goalpose, ts)
     plotTransformGoadAndRobotPoseGraph(goalpose, wallpoints)
 
+    plotEvaluatedTrajectoriesGraph(goalpose, wallpoints, trajectories, costs)
+    
     # for pos in nodes:
     #     if start_node.position == nodes[pos].position:
     #         start_exits = True
