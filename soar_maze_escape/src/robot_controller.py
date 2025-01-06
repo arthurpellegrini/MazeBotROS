@@ -29,7 +29,44 @@ def localiseRobot():
         trans.transform.rotation.w]).as_euler("xyz")[2]
 
     rospy.loginfo(f"Position du robot : x={trans.transform.translation.x}, y={trans.transform.translation.y}, theta={theta}")
-    return trans.transform.translation.y, trans.transform.translation.x,  theta
+    # return trans.transform.translation.y, trans.transform.translation.x,  theta
+    return np.array([
+        trans.transform.translation.x,
+        trans.transform.translation.y,
+        theta])
+
+def pose2tf_mat(pose):
+    """Converts a pose (x, y, theta) into a homogeneous transformation matrix"""
+    x, y, theta = pose
+    cos_theta = np.cos(theta)
+    sin_theta = np.sin(theta)
+    return np.array([
+        [cos_theta, -sin_theta, x],
+        [sin_theta, cos_theta, y],
+        [0, 0, 1]
+    ])
+
+def tf_mat2pose(tf_mat):
+    """Converts a homogeneous transformation matrix into a pose (x, y, theta)"""
+    x = tf_mat[0, 2]
+    y = tf_mat[1, 2]
+    theta = np.arctan2(tf_mat[1, 0], tf_mat[0, 0])
+    return np.array([x, y, theta])
+    
+    
+def transform_goal_relative_to_robot(robot_pose, goal_pose):
+    """Transforms the goal pose to be relative to the robot pose."""
+    robot_tf = pose2tf_mat(robot_pose)
+    goal_tf = pose2tf_mat(goal_pose)
+    
+    robot_tf_inv = np.linalg.inv(robot_tf)
+    
+    relative_tf = np.dot(robot_tf_inv, goal_tf)
+    
+    relative_pose = tf_mat2pose(relative_tf)
+    return relative_pose
+
+
 
 
 def publish_velocity(linear, angular):
