@@ -2,7 +2,7 @@ PADDING = 4
 SIZE = 6
 
 import numpy as np
-from map_utils import convertWorldToGrid
+from map_utils import convertWorldToGrid, convertMapToWorldCoordinates
  
 # Node class represents a graph node with a position
 class Node:
@@ -155,7 +155,7 @@ def findExits(grid: np.array, nodes: list) -> list:
 
 def findClosestNode(robot_pos_world, edges, recMap):
    
-    y_robot, x_robot = robot_pos_world[:2]
+    x_robot, y_robot = robot_pos_world[:2]
     y_robot_grid, x_robot_grid = convertWorldToGrid(y_robot, x_robot, recMap)
 
     # We take edges parent and child nodes to find the closest node
@@ -245,7 +245,7 @@ def a_star_search(grid, nodes, edges, start, goal):
     return []  # No path found
 
 
-def path_reconstrcution(path):
+def path_reconstrcution(path, recMap):
     # Add rotation for each step
     global_path = []
 
@@ -263,6 +263,7 @@ def path_reconstrcution(path):
         
         rotation = np.arctan2(dy, dx)  # For other directions
         
-        global_path.append((next_node.position[0], next_node.position[1], rotation))
+        x_coordinate, y_coordinate = convertMapToWorldCoordinates(next_node.position[0], next_node.position[1], recMap)
+        global_path.append((x_coordinate, y_coordinate, rotation))
     
     return global_path

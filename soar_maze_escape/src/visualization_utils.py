@@ -140,7 +140,7 @@ def plotNodePositionGraph(recMap, nodes, edges, wall_positions, robot_pos):
         y = [y0, y1]
         ax.plot(x, y, c=COLOR_SCHEME["twblue"])
     
-    ax.scatter([robot_pos[1]], [robot_pos[0]], c=COLOR_SCHEME["twgrey"], s=15**2, label="Robot Position")
+    ax.scatter([robot_pos[0]], [robot_pos[1]], c=COLOR_SCHEME["twgrey"], s=15**2, label="Robot Position")
 
 
     # Set axes labels and figure title

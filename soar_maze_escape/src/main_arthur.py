@@ -45,7 +45,7 @@ def main():
         # Get the path with the lower number of steps
         path = min(paths, key=lambda x: len(x)) if paths else None
         print("Path found:", [step.position for step in path])
-        global_path = path_reconstrcution(path)
+        global_path = path_reconstrcution(path, recMap)
         print("Global path:", global_path)
     else:
         print("Start or goal node is invalid.")
