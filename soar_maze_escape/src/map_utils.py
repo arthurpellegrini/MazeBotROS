@@ -1,6 +1,6 @@
+#!/usr/bin/env python3
 import rospy
 import numpy as np
-
 from nav_msgs.srv import GetMap
 from nav_msgs.msg import OccupancyGrid
 
@@ -16,14 +16,14 @@ def getMap() -> OccupancyGrid:
     return recMap
 
 
-def convertMapToWorldCoordinates(y, x, recMap):
+def convertMapToWorld(y, x, recMap):
     resolution = recMap.info.resolution
     origin = recMap.info.origin.position
     y_world = y * resolution + (origin.y + resolution / 2)
     x_world = x * resolution + (origin.x + resolution / 2)
     return y_world, x_world
 
-def convertWorldToGrid(y_world, x_world, recMap):
+def convertWorldToMap(y_world, x_world, recMap):
     resolution = recMap.info.resolution
     origin = recMap.info.origin.position
 

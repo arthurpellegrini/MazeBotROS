@@ -1,8 +1,7 @@
+#!/usr/bin/env python3
 import numpy as np
 import matplotlib.pyplot as plt
-
-from map_utils import convertMapToWorldCoordinates
-from graph_utils import Node
+from map_utils import convertMapToWorld
 
 
 # Store colors matching UAS TW colour scheme as dict 
@@ -53,9 +52,9 @@ def plotGraph(recMap, edges, wall_positions, robot_pos):
 
     # Get points on graph
     nodePositions = np.array([
-        convertMapToWorldCoordinates(n.parent.position[0], n.parent.position[1], recMap) for n in edges
+        convertMapToWorld(n.parent.position[0], n.parent.position[1], recMap) for n in edges
         ] + [
-        convertMapToWorldCoordinates(n.child.position[0], n.child.position[1], recMap) for n in edges
+        convertMapToWorld(n.child.position[0], n.child.position[1], recMap) for n in edges
     ])
 
     nodePositions = np.unique(nodePositions, axis=1)
@@ -64,8 +63,8 @@ def plotGraph(recMap, edges, wall_positions, robot_pos):
     edgeLines = np.array(
         [
             [
-                convertMapToWorldCoordinates(n.parent.position[0], n.parent.position[1], recMap),
-                convertMapToWorldCoordinates(n.child.position[0], n.child.position[1], recMap)
+                convertMapToWorld(n.parent.position[0], n.parent.position[1], recMap),
+                convertMapToWorld(n.child.position[0], n.child.position[1], recMap)
             ] for n in edges
         ]
     )
@@ -111,14 +110,14 @@ def plotNodePositionGraph(recMap, nodes, edges, wall_positions, robot_pos):
 
     # Convert node positions to world coordinates
     nodePositions = np.array([
-        convertMapToWorldCoordinates(n[1], n[0], recMap) for n in nodes
+        convertMapToWorld(n[1], n[0], recMap) for n in nodes
     ])
 
     edgeLines = np.array(
         [
             [
-                convertMapToWorldCoordinates(n.parent.position[0], n.parent.position[1], recMap),
-                convertMapToWorldCoordinates(n.child.position[0], n.child.position[1], recMap)
+                convertMapToWorld(n.parent.position[0], n.parent.position[1], recMap),
+                convertMapToWorld(n.child.position[0], n.child.position[1], recMap)
             ] for n in edges
         ]
     )

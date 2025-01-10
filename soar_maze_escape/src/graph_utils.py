@@ -1,9 +1,14 @@
+#!/usr/bin/env python3
+import numpy as np
+import heapq
+from map_utils import convertWorldToMap, convertMapToWorld
+
+
+# Settings for the graph
 PADDING = 4
 SIZE = 6
 
-import numpy as np
-from map_utils import convertWorldToGrid, convertMapToWorldCoordinates
- 
+
 # Node class represents a graph node with a position
 class Node:
     def __init__(self, position):
@@ -26,7 +31,6 @@ class Edge:
         return f"{{'parent': '{self.parent}', 'child': '{self.child}'}}"
 
 
-# Checks if a wall exists between two points
 def hasWall(grid: np.array, start, end) -> bool:
     """
     Checks if a wall exists between two points
@@ -55,7 +59,6 @@ def hasWall(grid: np.array, start, end) -> bool:
     return False
 
 
-# Finds neighbors of a node based on grid constraints and connectivity
 def findNeighbors(grid: np.array, x: int, y: int, distance: int=SIZE) -> list:
     """
     Finds neighbors of a node based on grid constraints and connectivity
@@ -79,7 +82,6 @@ def findNeighbors(grid: np.array, x: int, y: int, distance: int=SIZE) -> list:
     return neighbors
 
 
-# Builds a graph from a 2D grid
 def buildGraph(grid: np.array) -> tuple:
     """
     Builds a graph from a 2D grid
@@ -108,7 +110,6 @@ def buildGraph(grid: np.array) -> tuple:
     return nodes, edges
 
 
-# Find exit nodes inside the map
 def findExits(grid: np.array, nodes: list) -> list:
     """
     Find exit nodes to the graph by checking boundary nodes without walls towards the outside.
@@ -156,7 +157,7 @@ def findExits(grid: np.array, nodes: list) -> list:
 def findClosestNode(robot_pos_world, edges, recMap):
    
     x_robot, y_robot = robot_pos_world[:2]
-    y_robot_grid, x_robot_grid = convertWorldToGrid(y_robot, x_robot, recMap)
+    y_robot_grid, x_robot_grid = convertWorldToMap(y_robot, x_robot, recMap)
 
     # We take edges parent and child nodes to find the closest node
     min_distance = float("inf")
@@ -182,13 +183,12 @@ def findClosestNode(robot_pos_world, edges, recMap):
     return closest_node
 
 
-import heapq  # For priority queue
-
 def heuristic(a, b):
     """Calculate the heuristic (Euclidean distance) between two points."""
     return np.linalg.norm(np.array(a) - np.array(b))
 
-def a_star_search(grid, nodes, edges, start, goal):
+
+def aStarSearch(grid, nodes, edges, start, goal):
     """
     Perform A* search on the graph to find the shortest path.
     
@@ -244,13 +244,15 @@ def a_star_search(grid, nodes, edges, start, goal):
     
     return []  # No path found
 
-def interpolate_point(start, end):
+
+def interpolatePoint(start, end):
     ratio = 0.5  # Midpoint
     x = start[0] + ratio * (end[0] - start[0])
     y = start[1] + ratio * (end[1] - start[1])
     return (x, y)
 
-def reconstruct_path_with_rotation(path, recMap):
+
+def reconstructPathWithRotation(path, recMap):
     # Add rotation for each step
     global_path = []
 
@@ -269,15 +271,15 @@ def reconstruct_path_with_rotation(path, recMap):
         rotation = np.arctan2(dy, dx)  # For other directions
         
         # Interpolate a single point between current_node and next_node
-        intermediate_point = interpolate_point(current_node.position, next_node.position)
+        intermediate_point = interpolatePoint(current_node.position, next_node.position)
         
-        x_coordinate, y_coordinate = convertMapToWorldCoordinates(intermediate_point[0], intermediate_point[1], recMap)
+        x_coordinate, y_coordinate = convertMapToWorld(intermediate_point[0], intermediate_point[1], recMap)
         global_path.append((x_coordinate, y_coordinate, rotation))
     
     return global_path
 
 
-def reconstruct_best_path(nodes, start_node, edges, find_exits, grid, recMap) -> list:
+def reconstructBestPath(nodes, start_node, edges, find_exits, grid, recMap) -> list:
     global_path = []
 
     for pos in nodes:
@@ -285,12 +287,12 @@ def reconstruct_best_path(nodes, start_node, edges, find_exits, grid, recMap) ->
             start_exits = True
 
     if start_exits:
-        paths = [a_star_search(grid, nodes, edges, start_node, exit.child) for exit in find_exits]
+        paths = [aStarSearch(grid, nodes, edges, start_node, exit.child) for exit in find_exits]
         print("Paths found:", [[step.position for step in path] for path in paths])
         # Get the path with the lower number of steps
         path = min(paths, key=lambda x: len(x)) if paths else None
         print("Path found:", [step.position for step in path])
-        global_path = reconstruct_path_with_rotation(path, recMap)
+        global_path = reconstructPathWithRotation(path, recMap)
         print("Global path:", global_path)
     else:
         print("Start or goal node is invalid.")

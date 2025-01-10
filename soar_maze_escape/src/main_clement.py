@@ -1,11 +1,11 @@
 #!/usr/bin/env python3
-
 import rospy
 from map_utils import getMap, transformMap
-from graph_utils import buildGraph, findExits, a_star_search, findClosestNode, Node
+from graph_utils import buildGraph, findExits, aStarSearch, findClosestNode, Node
 from visualization_utils import plotEvaluatedTrajectoriesGraph, plotMap, plotGraph, plotNodePositionGraph, plotArrowPathGraph, plotTransformGoadAndRobotPoseGraph
-from robot_controller import PT2Block, evaluateControls, generateControls, localiseRobot, goToNode, pubCMD, pubGoal, pubTrajectory, transform_goal_relative_to_robot
+from robot_controller import PT2Block, evaluateControls, generateControls, localiseRobot, goToNode, pubCMD, pubGoal, pubTrajectory, transformGoalRelativeToRobot
 import numpy as np
+
 
 def main():
     rospy.init_node("moro_maze_navigation")
@@ -47,7 +47,7 @@ def main():
     
     current_goal_ID = 1
     # plotArrowPathGraph(robot_pos, global_path, wallpoints)
-    goalpose = transform_goal_relative_to_robot(robot_pos,global_path[current_goal_ID])
+    goalpose = transformGoalRelativeToRobot(robot_pos,global_path[current_goal_ID])
     print("goal pose",goalpose)
 
     last_control = np.array([0, 0])

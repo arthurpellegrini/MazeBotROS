@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 import rospy
 import numpy as np
 import numpy.typing as npt
@@ -5,18 +6,15 @@ import tf2_ros
 import numpy.typing as npt
 import copy
 from scipy.spatial.transform import Rotation as R
-from visualization_msgs.msg import Marker
-from geometry_msgs.msg import Point
-from geometry_msgs.msg import Twist
-from map_utils import convertMapToWorldCoordinates
-
+from geometry_msgs.msg import Twist, PoseStamped
 from nav_msgs.msg import Path
-from geometry_msgs.msg import PoseStamped
+
 
 # Publishers
-cmd_vel_pub = rospy.Publisher('/cmd_vel', Twist, queue_size=10)
-trajectory_pub = rospy.Publisher('/trajectory', Path, queue_size=10)
-goal_pub = rospy.Publisher('/goal_pose', PoseStamped, queue_size=10)
+CMD_VEL_PUB = rospy.Publisher('/cmd_vel', Twist, queue_size=10)
+TRAJECTORY_PUB = rospy.Publisher('/trajectory', Path, queue_size=10)
+GOAL_PUB = rospy.Publisher('/goal_pose', PoseStamped, queue_size=10)
+
 
 def localiseRobot():
     """Localises the robot towards the 'map' coordinate frame. Returns pose in format (x,y,theta)"""
@@ -44,7 +42,8 @@ def localiseRobot():
         trans.transform.translation.y,
         theta])
 
-def pose2tf_mat(pose):
+
+def convertPose2TfMatrix(pose):
     """Converts a pose (x, y, theta) into a homogeneous transformation matrix"""
     x, y, theta = pose
     cos_theta = np.cos(theta)
@@ -55,25 +54,27 @@ def pose2tf_mat(pose):
         [0, 0, 1]
     ])
 
-def tf_mat2pose(tf_mat):
+
+def convertTfMatrix2Pose(tf_mat):
     """Converts a homogeneous transformation matrix into a pose (x, y, theta)"""
     x = tf_mat[0, 2]
     y = tf_mat[1, 2]
     theta = np.arctan2(tf_mat[1, 0], tf_mat[0, 0])
     return np.array([x, y, theta])
-    
-    
-def transform_goal_relative_to_robot(robot_pose, goal_pose):
+
+
+def transformGoalRelativeToRobot(robot_pose, goal_pose):
     """Transforms the goal pose to be relative to the robot pose."""
-    robot_tf = pose2tf_mat(robot_pose)
-    goal_tf = pose2tf_mat(goal_pose)
+    robot_tf = convertPose2TfMatrix(robot_pose)
+    goal_tf = convertPose2TfMatrix(goal_pose)
     
     robot_tf_inv = np.linalg.inv(robot_tf)
     
     relative_tf = np.dot(robot_tf_inv, goal_tf)
     
-    relative_pose = tf_mat2pose(relative_tf)
+    relative_pose = convertTfMatrix2Pose(relative_tf)
     return relative_pose
+
 
 def forwardKinematics(control: npt.ArrayLike, lastPose: npt.ArrayLike, dt: float, dtype=np.float64) -> np.ndarray:
     """Mobile robot forward kinematics (see Thrun Probabilistic Robotics)
@@ -93,6 +94,7 @@ def forwardKinematics(control: npt.ArrayLike, lastPose: npt.ArrayLike, dt: float
         vtwt*np.cos(theta) - vtwt*np.cos(theta + (wt*dt)),
         wt*dt
     ], dtype=dtype)
+
 
 class PT2Block:
     """Discrete PT2 Block approximated using the Tustin approximation (rough robot dynamics model)
@@ -119,6 +121,7 @@ class PT2Block:
         y[0] = ( e[0]*self.k4 + e[1]*self.k5 + e[2]*self.k6 - y[1]*self.k2 - y[2]*self.k3 )/self.k1
         return y[0]
 
+
 def generateControls(lastControl: npt.ArrayLike) -> np.ndarray:
     """
     Generates a list of possible (vt, wt) pairs that lead the robot towards the next goal.
@@ -143,6 +146,7 @@ def generateControls(lastControl: npt.ArrayLike) -> np.ndarray:
     ]
 
     return valid_controls
+
 
 def costFn(pose: npt.ArrayLike, goalpose: npt.ArrayLike, control: npt.ArrayLike) -> float:
     """Calculates the cost based on the pose"""
@@ -175,6 +179,7 @@ def costFn(pose: npt.ArrayLike, goalpose: npt.ArrayLike, control: npt.ArrayLike)
     
     return cost
 
+
 def evaluateControls(controls, robotModelPT2, horizon, goalpose, ts):
     costs = np.zeros_like(np.array(controls)[:,0], dtype=float)
     trajectories = [ [] for _ in controls ]
@@ -199,12 +204,14 @@ def evaluateControls(controls, robotModelPT2, horizon, goalpose, ts):
 
     return costs, trajectories
 
+
 def pubCMD(control):
     """Publishes the control input as a geometry_msgs/Twist message to the /cmd_vel topic"""
     twist = Twist()
     twist.linear.x = control[0] 
     twist.angular.z = control[1]
-    cmd_vel_pub.publish(twist)
+    CMD_VEL_PUB.publish(twist)
+
 
 def pubTrajectory(trajectory):
     """Publishes the trajectory as a nav_msgs/Path message to the /trajectory topic"""
@@ -222,7 +229,8 @@ def pubTrajectory(trajectory):
         pose_msg.pose.orientation.w = np.cos(pose[2] / 2.0)
         path_msg.poses.append(pose_msg)
 
-    trajectory_pub.publish(path_msg)
+    TRAJECTORY_PUB.publish(path_msg)
+
 
 def pubGoal(goalpose):
     """Publishes the goalpose as a geometry_msgs/PoseStamped message to the /goal_pose topic"""
@@ -233,4 +241,4 @@ def pubGoal(goalpose):
     pose_msg.pose.position.y = goalpose[1]
     pose_msg.pose.orientation.z = np.sin(goalpose[2] / 2.0)
     pose_msg.pose.orientation.w = np.cos(goalpose[2] / 2.0)
-    goal_pub.publish(pose_msg)
+    GOAL_PUB.publish(pose_msg)

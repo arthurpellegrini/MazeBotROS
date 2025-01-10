@@ -1,17 +1,18 @@
 #!/usr/bin/env python3
-
 import rospy
 from map_utils import getMap, transformMap
-from graph_utils import buildGraph, findExits, a_star_search, findClosestNode, Node
+from graph_utils import buildGraph, findExits, findClosestNode, reconstructBestPath
 from visualization_utils import plotMap, plotGraph, plotNodePositionGraph
-from robot_controller import localiseRobot, goToNode
+from robot_controller import localiseRobot, generateControls, pubCMD, pubGoal, pubTrajectory, PT2Block, evaluateControls, transformGoalRelativeToRobot
 import numpy as np
 
 def main():
     rospy.init_node("moro_maze_navigation")
     recMap = getMap()
+
+    # DEBUG - Plot map
     freepoints, wallpoints = transformMap(recMap)
-    # plotMap(freepoints, wallpoints)
+    plotMap(freepoints, wallpoints)
 
     # Convert map to 2D grid
     grid = np.array(recMap.data).reshape((recMap.info.height, recMap.info.width))
@@ -23,47 +24,48 @@ def main():
     nodes, find_exits = findExits(grid, nodes)
     edges += find_exits
 
-    print("Nodes:", len(nodes), "- Edges:", len(edges))
-    for edge in edges:
-        print(edge)
-
-    robot_pos = localiseRobot()
-    print("robot pose",robot_pos)
-    # plotGraph(recMap, edges, wallpoints, robot_pos)
-    plotNodePositionGraph(recMap, nodes, edges, wallpoints, robot_pos)
-
-    start_node = findClosestNode(robot_pos, edges, recMap)
-
-    for pos in nodes:
-        if start_node.position == nodes[pos].position:
-            start_exits = True
-
-    if start_exits:
-        paths = [a_star_search(grid, nodes, edges, start_node, exit.child) for exit in find_exits]
-
-        print("Paths found:", [[step.position for step in path] for path in paths])
-
-        # Get the path with the lower number of steps
-        path = min(paths, key=lambda x: len(x)) if paths else None
-
-        print("Path found:", [step.position for step in path])
-        # Optional: Visualize path
-        for step in path:
-            print(f"Step: {step}")
-            robot_pos = goToNode(robot_pos, step, recMap)
-    else:
-        print("Start or goal node is invalid.")
-
-
-    # exemple node ([y, x])
-    # new_robot_pos = [0, 0, 0]
+    # print("Nodes:", len(nodes), "- Edges:", len(edges))
     # for edge in edges:
-    #     print(edge.parent.position)
-    #     if(edge.parent.position == (22, 10)):
-    #             new_robot_pos = goToNode(robot_pos, edge.parent, recMap)
-    #             print("new_robot_pos", new_robot_pos)
-    #     if(new_robot_pos != [0,0,0] and edge.parent.position == (22, 22)):
-    #         goToNode(new_robot_pos, edge.parent, recMap)
+    #     print(edge)
+
+    robot_pose = localiseRobot()
+
+    # A* search
+    start_node = findClosestNode(robot_pose, edges, recMap)
+    global_path = reconstructBestPath(nodes, start_node, edges, find_exits, grid, recMap)
+
+    # Parameters
+    ts = 0.5
+    horizon = 70
+    robot_model = PT2Block(ts=ts, T=0.05, D=0.8)
+    last_control = np.array([0, 0])
+    current_goal_ID = 1
+
+    while not rospy.is_shutdown():
+        robot_pose = localiseRobot()
+        goal_pose = transformGoalRelativeToRobot(robot_pose,global_path[current_goal_ID])
+        controls = generateControls(last_control)
+        costs, trajectories = evaluateControls(controls, robot_model, horizon, goal_pose, ts)
+        best_idx = np.argmin(costs)
+        last_control = controls[best_idx]
+
+        # Publish best control, trajectory, and goal
+        pubCMD(last_control)
+        pubTrajectory(trajectories[best_idx])
+        pubGoal(goal_pose)
+
+        # Stop if goal reached
+        if np.linalg.norm(goal_pose[:2]) < 0.2:
+            current_goal_ID += 1
+
+            if current_goal_ID == len(global_path):
+                break
+
+    # # Stop robot
+    pubCMD([0, 0])
+
+
 
 if __name__ == "__main__":
     main()
+    
