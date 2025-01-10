@@ -61,6 +61,10 @@ def main():
 
     plotEvaluatedTrajectoriesGraph(goalpose, wallpoints, trajectories, costs)
     
+    idx = np.argmin(costs) # Get index of control with lowest cost
+    print(f"Index with lowest cost: {idx}")
+    print(f"Resulting cost: {costs[idx]}")
+    print(f"Resulting control: {controls[idx]}")
     # for pos in nodes:
     #     if start_node.position == nodes[pos].position:
     #         start_exits = True
