@@ -10,7 +10,13 @@ from geometry_msgs.msg import Point
 from geometry_msgs.msg import Twist
 from map_utils import convertMapToWorldCoordinates
 
+from nav_msgs.msg import Path
+from geometry_msgs.msg import PoseStamped
+
+# Publishers
 cmd_vel_pub = rospy.Publisher('/cmd_vel', Twist, queue_size=10)
+trajectory_pub = rospy.Publisher('/trajectory', Path, queue_size=10)
+goal_pub = rospy.Publisher('/goal_pose', PoseStamped, queue_size=10)
 
 def localiseRobot():
     """Localises the robot towards the 'map' coordinate frame. Returns pose in format (x,y,theta)"""
@@ -193,78 +199,38 @@ def evaluateControls(controls, robotModelPT2, horizon, goalpose, ts):
 
     return costs, trajectories
 
-def publish_velocity(linear, angular):
+def pubCMD(control):
+    """Publishes the control input as a geometry_msgs/Twist message to the /cmd_vel topic"""
     twist = Twist()
-    twist.linear.x = linear
-    twist.angular.z = angular
+    twist.linear.x = control[0] 
+    twist.angular.z = control[1]
     cmd_vel_pub.publish(twist)
 
+def pubTrajectory(trajectory):
+    """Publishes the trajectory as a nav_msgs/Path message to the /trajectory topic"""
+    path_msg = Path()
+    path_msg.header.stamp = rospy.Time.now()
+    path_msg.header.frame_id = "base_link"
 
-def rotateTowardTarget(desired_theta, theta_robot):
-    delta_theta = desired_theta - theta_robot
-    delta_theta = (delta_theta + np.pi) % (2 * np.pi) - np.pi
+    for pose in trajectory:
+        pose_msg = PoseStamped()
+        pose_msg.header.stamp = rospy.Time.now()
+        pose_msg.header.frame_id = "base_link"
+        pose_msg.pose.position.x = pose[0]
+        pose_msg.pose.position.y = pose[1]
+        pose_msg.pose.orientation.z = np.sin(pose[2] / 2.0)
+        pose_msg.pose.orientation.w = np.cos(pose[2] / 2.0)
+        path_msg.poses.append(pose_msg)
 
-    while abs(delta_theta) > 0.01:
-        publish_velocity(0.0, 0.5 * delta_theta)
-        rospy.sleep(0.1)
-        current_pose = localiseRobot()
-        _, _, theta_robot = current_pose
-        delta_theta = desired_theta - theta_robot
-        delta_theta = (delta_theta + np.pi) % (2 * np.pi) - np.pi
+    trajectory_pub.publish(path_msg)
 
-
-def markerToDebug(y_target, x_target):
-    marker_pub = rospy.Publisher('visualization_marker', Marker, queue_size=10)
-    marker = Marker()
-    marker.header.frame_id = "map"
-    marker.header.stamp = rospy.Time.now()
-    marker.ns = "target_node"
-    marker.id = 0
-    marker.type = Marker.SPHERE
-    marker.action = Marker.ADD
-    marker.pose.position = Point(x_target, y_target, 0)
-    marker.pose.orientation.w = 1.0
-    marker.scale.x = 0.2
-    marker.scale.y = 0.2
-    marker.scale.z = 0.2
-    marker.color.a = 1.0
-    marker.color.r = 1.0
-    marker.color.g = 0.0
-    marker.color.b = 0.0
-    rospy.sleep(5)
-    marker_pub.publish(marker)
-
-
-def goToNode(current_pose, target_node, recMap):
-    y_r, x_r, theta_r = current_pose
-    x_node, y_node  = target_node.position
-    y_target, x_target = convertMapToWorldCoordinates(y_node, x_node, recMap)
-    
-    markerToDebug(y_target, x_target)
-
-    # Calculate the desired angle to the target and rotate the robot accordingly
-    theta_desired = np.arctan2(y_target - y_r, x_target - x_r)
-    delta_theta = theta_desired - theta_r
-    delta_theta = (delta_theta + np.pi) % (2 * np.pi) - np.pi
-
-    rotateTowardTarget(theta_desired, theta_r)
-    
-    # Go to the target node
-    dy = y_target - y_r
-    dx = x_target - x_r
-    distance = np.sqrt(np.square(dy) + np.square(dx))
-
-    while distance > 0.1:
-        linear_velocity = min(distance * 0.5, 0.3)
-        publish_velocity(linear_velocity, 0)
-        rospy.sleep(0.1)
-        current_pose = localiseRobot()
-        y_r, x_r, _ = current_pose
-        distance = np.sqrt(np.square(y_target - y_r) + np.square(x_target - x_r))
-
-    # Stopper le robot
-    publish_velocity(0.0, 0.0)
-    rospy.loginfo("Robot arrived at target node")
-    return current_pose
-
-
+def pubGoal(goalpose):
+    """Publishes the goalpose as a geometry_msgs/PoseStamped message to the /goal_pose topic"""
+    pose_msg = PoseStamped()
+    pose_msg.header.stamp = rospy.Time.now()
+    pose_msg.header.frame_id = "base_link"
+    pose_msg.pose.position.x = goalpose[0]
+    pose_msg.pose.position.y = goalpose[1]
+    pose_msg.pose.orientation.z = np.sin(goalpose[2] / 2.0)
+    pose_msg.pose.orientation.w = np.cos(goalpose[2] / 2.0)
+    goal_pub.publish(pose_msg)

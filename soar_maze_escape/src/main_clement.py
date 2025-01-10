@@ -4,7 +4,7 @@ import rospy
 from map_utils import getMap, transformMap
 from graph_utils import buildGraph, findExits, a_star_search, findClosestNode, Node
 from visualization_utils import plotEvaluatedTrajectoriesGraph, plotMap, plotGraph, plotNodePositionGraph, plotArrowPathGraph, plotTransformGoadAndRobotPoseGraph
-from robot_controller import PT2Block, evaluateControls, generateControls, localiseRobot, goToNode, transform_goal_relative_to_robot
+from robot_controller import PT2Block, evaluateControls, generateControls, localiseRobot, goToNode, pubCMD, pubGoal, pubTrajectory, transform_goal_relative_to_robot
 import numpy as np
 
 def main():
@@ -32,7 +32,7 @@ def main():
     # plotGraph(recMap, edges, wallpoints, robot_pos)
     # plotNodePositionGraph(recMap, nodes, edges, wallpoints, robot_pos)
 
-    start_node = findClosestNode(robot_pos, edges, recMap)
+    # start_node = findClosestNode(robot_pos, edges, recMap)
     
     global_path = [
     [2.5 ,1, 0],
@@ -46,7 +46,7 @@ def main():
     ]
     
     current_goal_ID = 1
-    plotArrowPathGraph(robot_pos, global_path, wallpoints)
+    # plotArrowPathGraph(robot_pos, global_path, wallpoints)
     goalpose = transform_goal_relative_to_robot(robot_pos,global_path[current_goal_ID])
     print("goal pose",goalpose)
 
@@ -57,14 +57,23 @@ def main():
     horizon = 10 # Number of time steps to simulate. 10*0.5 sec = 5 seconds lookahead into the future
     robotModelPT2 = PT2Block(ts=ts, T=0.05, D=0.8)
     costs, trajectories = evaluateControls(controls, robotModelPT2, 70, goalpose, ts)
-    plotTransformGoadAndRobotPoseGraph(goalpose, wallpoints)
+    # plotTransformGoadAndRobotPoseGraph(goalpose, wallpoints)
 
-    plotEvaluatedTrajectoriesGraph(goalpose, wallpoints, trajectories, costs)
+    # plotEvaluatedTrajectoriesGraph(goalpose, wallpoints, trajectories, costs)
     
-    idx = np.argmin(costs) # Get index of control with lowest cost
+    # Find the best control and trajectory
+    idx = np.argmin(costs)
+    best_control = controls[idx]
+    best_trajectory = trajectories[idx]
+
+    # Publish the best control, trajectory, and goalpose
+    pubCMD(best_control)
+    pubTrajectory(best_trajectory)
+    pubGoal(goalpose)
+
     print(f"Index with lowest cost: {idx}")
     print(f"Resulting cost: {costs[idx]}")
-    print(f"Resulting control: {controls[idx]}")
+    print(f"Resulting control: {best_control}")
     # for pos in nodes:
     #     if start_node.position == nodes[pos].position:
     #         start_exits = True
