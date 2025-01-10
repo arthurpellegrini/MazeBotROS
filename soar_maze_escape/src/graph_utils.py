@@ -244,8 +244,13 @@ def a_star_search(grid, nodes, edges, start, goal):
     
     return []  # No path found
 
+def interpolate_point(start, end):
+    ratio = 0.5  # Midpoint
+    x = start[0] + ratio * (end[0] - start[0])
+    y = start[1] + ratio * (end[1] - start[1])
+    return (x, y)
 
-def path_reconstrcution(path, recMap):
+def reconstruct_path_with_rotation(path, recMap):
     # Add rotation for each step
     global_path = []
 
@@ -263,7 +268,31 @@ def path_reconstrcution(path, recMap):
         
         rotation = np.arctan2(dy, dx)  # For other directions
         
-        x_coordinate, y_coordinate = convertMapToWorldCoordinates(next_node.position[0], next_node.position[1], recMap)
+        # Interpolate a single point between current_node and next_node
+        intermediate_point = interpolate_point(current_node.position, next_node.position)
+        
+        x_coordinate, y_coordinate = convertMapToWorldCoordinates(intermediate_point[0], intermediate_point[1], recMap)
         global_path.append((x_coordinate, y_coordinate, rotation))
+    
+    return global_path
+
+
+def reconstruct_best_path(nodes, start_node, edges, find_exits, grid, recMap) -> list:
+    global_path = []
+
+    for pos in nodes:
+        if start_node.position == nodes[pos].position:
+            start_exits = True
+
+    if start_exits:
+        paths = [a_star_search(grid, nodes, edges, start_node, exit.child) for exit in find_exits]
+        print("Paths found:", [[step.position for step in path] for path in paths])
+        # Get the path with the lower number of steps
+        path = min(paths, key=lambda x: len(x)) if paths else None
+        print("Path found:", [step.position for step in path])
+        global_path = reconstruct_path_with_rotation(path, recMap)
+        print("Global path:", global_path)
+    else:
+        print("Start or goal node is invalid.")
     
     return global_path
