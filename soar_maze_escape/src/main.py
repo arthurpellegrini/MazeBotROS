@@ -34,18 +34,21 @@ def main():
     start_node = findClosestNode(robot_pose, edges, recMap)
     global_path = reconstructBestPath(nodes, start_node, edges, find_exits, grid, recMap)
 
-    # Parameters
+    # Parameters - TODO: Tune these parameters
     ts = 0.5
     horizon = 70
     robot_model = PT2Block(ts=ts, T=0.05, D=0.8)
-    last_control = np.array([0, 0])
+    last_control = np.array([0, 0]) 
     current_goal_ID = 1
+    trigger_distance = 0.2
 
     while not rospy.is_shutdown():
         robot_pose = localiseRobot()
         goal_pose = transformGoalRelativeToRobot(robot_pose,global_path[current_goal_ID])
         controls = generateControls(last_control)
         costs, trajectories = evaluateControls(controls, robot_model, horizon, goal_pose, ts)
+        # for i in range(len(trajectories)):
+        #     print(f"Trajectories: {trajectories[i]} - Cost: {costs[i]}")
         best_idx = np.argmin(costs)
         last_control = controls[best_idx]
 
@@ -55,7 +58,7 @@ def main():
         pubGoal(goal_pose)
 
         # Stop if goal reached
-        if np.linalg.norm(goal_pose[:2]) < 0.2:
+        if np.linalg.norm(goal_pose[:2]) < trigger_distance:
             current_goal_ID += 1
 
             if current_goal_ID == len(global_path):
