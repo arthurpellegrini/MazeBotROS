@@ -15,6 +15,9 @@ DEBUG_TRAJECTORY = False
 
 
 def main():
+    """
+    Main function to initialize the ROS node and execute the maze navigation algorithm.
+    """
     rospy.init_node("moro_maze_navigation")
 
     recMap = getMap()
@@ -85,4 +88,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-    
