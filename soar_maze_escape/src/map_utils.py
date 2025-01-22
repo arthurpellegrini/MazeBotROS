@@ -5,9 +5,12 @@ from nav_msgs.srv import GetMap
 from nav_msgs.msg import OccupancyGrid
 
 
-# Helper method for retrieving the map
 def getMap() -> OccupancyGrid:
-    """ Loads map from map service """
+    """Loads map from map service.
+
+    Returns:
+        OccupancyGrid: The occupancy grid map.
+    """
     # Create service proxy
     get_map = rospy.ServiceProxy('static_map', GetMap)
     # Call service
@@ -17,13 +20,34 @@ def getMap() -> OccupancyGrid:
 
 
 def convertMapToWorld(y, x, recMap):
+    """Converts map coordinates to world coordinates.
+
+    Args:
+        y (int): The y-coordinate in the map.
+        x (int): The x-coordinate in the map.
+        recMap (OccupancyGrid): The occupancy grid map.
+
+    Returns:
+        tuple: The (y_world, x_world) coordinates in the world.
+    """
     resolution = recMap.info.resolution
     origin = recMap.info.origin.position
     y_world = y * resolution + (origin.y + resolution / 2)
     x_world = x * resolution + (origin.x + resolution / 2)
     return y_world, x_world
 
+
 def convertWorldToMap(y_world, x_world, recMap):
+    """Converts world coordinates to map coordinates.
+
+    Args:
+        y_world (float): The y-coordinate in the world.
+        x_world (float): The x-coordinate in the world.
+        recMap (OccupancyGrid): The occupancy grid map.
+
+    Returns:
+        tuple: The (y_grid, x_grid) coordinates in the map.
+    """
     resolution = recMap.info.resolution
     origin = recMap.info.origin.position
 
@@ -32,8 +56,16 @@ def convertWorldToMap(y_world, x_world, recMap):
 
     return y_grid, x_grid
 
+
 def transformMap(occupancy_grid: OccupancyGrid):
-    """ Transforms the OccupancyGrid into Cartesian coordinates for free and wall points. """
+    """Transforms the OccupancyGrid into Cartesian coordinates for free and wall points.
+
+    Args:
+        occupancy_grid (OccupancyGrid): The occupancy grid map.
+
+    Returns:
+        tuple: Two lists containing the Cartesian coordinates of free and wall points.
+    """
     # Extract map data and metadata
     resolution = occupancy_grid.info.resolution
     width = occupancy_grid.info.width
