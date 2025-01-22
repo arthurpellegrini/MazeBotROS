@@ -6,14 +6,22 @@ from visualization_utils import plotMap, plotGraph, plotNodePositionGraph, plotA
 from robot_controller import localiseRobot, generateControls, pubCMD, pubGoal, pubTrajectory, PT2Block, evaluateControls, transformGoalRelativeToRobot
 import numpy as np
 
+
+# DEBUG FLAGS
+DEBUG_MAP = False
+DEBUG_GRAPH = False
+DEBUG_PATH = False
+DEBUG_TRAJECTORY = False
+
+
 def main():
     rospy.init_node("moro_maze_navigation")
 
     recMap = getMap()
     freepoints, wallpoints = transformMap(recMap)
 
-    # DEBUG - Plot map
-    plotMap(freepoints, wallpoints)
+    if DEBUG_MAP:
+        plotMap(freepoints, wallpoints)
 
     # Convert map to 2D grid
     grid = np.array(recMap.data).reshape((recMap.info.height, recMap.info.width))
@@ -27,16 +35,17 @@ def main():
 
     robot_pose = localiseRobot()
 
-    # DEBUG - Plot graph
-    plotGraph(recMap, edges, wallpoints, robot_pose)
-    plotNodePositionGraph(recMap, nodes, edges, wallpoints, robot_pose)
+    if DEBUG_GRAPH:
+        # plotGraph(recMap, edges, wallpoints, robot_pose)
+        # We will use the second one because the first plot is include inside the plotNodePositionGraph function
+        plotNodePositionGraph(recMap, nodes, edges, wallpoints, robot_pose)
 
     # A* search
     start_node = findClosestNode(robot_pose, edges, recMap)
     global_path = reconstructBestPath(nodes, start_node, edges, find_exits, grid, recMap)
 
-    # DEBUG - Plot path
-    plotArrowPathGraph(robot_pose, global_path, wallpoints)
+    if DEBUG_PATH:
+        plotArrowPathGraph(robot_pose, global_path, wallpoints)
 
     # Parameters - TODO: Tune these parameters
     ts = 0.5
@@ -54,10 +63,10 @@ def main():
         best_idx = np.argmin(costs)
         last_control = controls[best_idx]
 
-        # DEBUG - Plot goal pose and evaluated trajectories
-        plotTransformGoadAndRobotPoseGraph(goal_pose, wallpoints)
-        plotEvaluatedTrajectoriesGraph(goal_pose, wallpoints, trajectories, costs)
-
+        if DEBUG_TRAJECTORY:
+            # plotTransformGoadAndRobotPoseGraph(goal_pose, wallpoints)
+            # We will use the second one because the first plot is include inside the evaluateTrajectoriesGraph function
+            plotEvaluatedTrajectoriesGraph(goal_pose, wallpoints, trajectories, costs)
 
         pubCMD(last_control)
         pubTrajectory(trajectories[best_idx])
@@ -72,7 +81,6 @@ def main():
         
     # Stop robot
     pubCMD([0, 0])
-
 
 
 if __name__ == "__main__":
