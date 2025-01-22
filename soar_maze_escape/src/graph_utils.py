@@ -11,6 +11,12 @@ SIZE = 6
 
 # Node class represents a graph node with a position
 class Node:
+    """
+    Represents a node in the graph.
+
+    Attributes:
+        position (tuple[int, int]): The position of the node in the grid.
+    """
     def __init__(self, position):
         self.position = position
 
@@ -22,6 +28,14 @@ class Node:
 
 # Edge class represents a graph edge with parent, child, and cost
 class Edge:
+    """
+    Represents an edge in the graph.
+
+    Attributes:
+        parent (Node): The parent node of the edge.
+        child (Node): The child node of the edge.
+        cost (int): The cost associated with traversing the edge.
+    """
     def __init__(self, parent, child, cost):
         self.parent = parent
         self.child = child
@@ -33,15 +47,15 @@ class Edge:
 
 def hasWall(grid: np.array, start, end) -> bool:
     """
-    Checks if a wall exists between two points
+    Checks if a wall exists between two points.
 
     Args:
-        grid (np.array): 2D grid representing the map
-        start (tuple[int, int]): Starting point
-        end (tuple[int, int]): Ending point
+        grid (np.array): 2D grid representing the map.
+        start (tuple[int, int]): Starting point.
+        end (tuple[int, int]): Ending point.
 
     Returns:
-        (bool): True if a wall exists between the two points, False otherwise
+        bool: True if a wall exists between the two points, False otherwise.
     """
     x1, y1 = start
     x2, y2 = end
@@ -61,16 +75,16 @@ def hasWall(grid: np.array, start, end) -> bool:
 
 def findNeighbors(grid: np.array, x: int, y: int, distance: int=SIZE) -> list:
     """
-    Finds neighbors of a node based on grid constraints and connectivity
+    Finds neighbors of a node based on grid constraints and connectivity.
 
     Args:
-        grid (np.array): 2D grid representing the map
-        x (int): x-coordinate of the node
-        y (int): y-coordinate of the node
-        distance (int): Distance between nodes
+        grid (np.array): 2D grid representing the map.
+        x (int): x-coordinate of the node.
+        y (int): y-coordinate of the node.
+        distance (int): Distance between nodes.
     
     Returns:
-        (list[tuple[int, int]]): List of neighboring nodes    
+        list[tuple[int, int]]: List of neighboring nodes.
     """
     neighbors = []
     directions = [(-distance, 0), (distance, 0), (0, -distance), (0, distance)]
@@ -84,13 +98,13 @@ def findNeighbors(grid: np.array, x: int, y: int, distance: int=SIZE) -> list:
 
 def buildGraph(grid: np.array) -> tuple:
     """
-    Builds a graph from a 2D grid
+    Builds a graph from a 2D grid.
 
     Args:
-        grid (np.array): 2D grid representing the map
+        grid (np.array): 2D grid representing the map.
     
     Returns:
-        (list[Edge]): List of edges in the graph
+        tuple: A tuple containing a dictionary of nodes and a list of edges.
     """
     nodes = {}
     edges = []
@@ -115,11 +129,11 @@ def findExits(grid: np.array, nodes: list) -> list:
     Find exit nodes to the graph by checking boundary nodes without walls towards the outside.
 
     Args:
-        grid (np.array): 2D grid representing the map
-        nodes (list[Node]): List of nodes in the graph
+        grid (np.array): 2D grid representing the map.
+        nodes (list[Node]): List of nodes in the graph.
     
     Returns:
-        (list[Edge]): List of nodes in the graph with exit nodes
+        tuple: A tuple containing a dictionary of nodes and a list of exit edges.
     """
         
 
@@ -155,7 +169,17 @@ def findExits(grid: np.array, nodes: list) -> list:
 
 
 def findClosestNode(robot_pos_world, edges, recMap):
-   
+    """
+    Find the closest node to the robot's position.
+
+    Args:
+        robot_pos_world (tuple): The robot's position in world coordinates.
+        edges (list[Edge]): List of edges in the graph.
+        recMap (np.array): The map used for conversion.
+    
+    Returns:
+        Node: The closest node to the robot's position.
+    """
     x_robot, y_robot = robot_pos_world[:2]
     y_robot_grid, x_robot_grid = convertWorldToMap(y_robot, x_robot, recMap)
 
@@ -184,7 +208,16 @@ def findClosestNode(robot_pos_world, edges, recMap):
 
 
 def heuristic(a, b):
-    """Calculate the heuristic (Euclidean distance) between two points."""
+    """
+    Calculate the heuristic (Euclidean distance) between two points.
+
+    Args:
+        a (tuple): The first point.
+        b (tuple): The second point.
+    
+    Returns:
+        float: The Euclidean distance between the two points.
+    """
     return np.linalg.norm(np.array(a) - np.array(b))
 
 
@@ -246,6 +279,16 @@ def aStarSearch(grid, nodes, edges, start, goal):
 
 
 def interpolatePoint(start, end):
+    """
+    Interpolate a point between two points.
+
+    Args:
+        start (tuple): The starting point.
+        end (tuple): The ending point.
+    
+    Returns:
+        tuple: The interpolated point.
+    """
     ratio = 0.5  # Midpoint
     x = start[0] + ratio * (end[0] - start[0])
     y = start[1] + ratio * (end[1] - start[1])
@@ -253,6 +296,16 @@ def interpolatePoint(start, end):
 
 
 def reconstructPathWithRotation(path, recMap):
+    """
+    Reconstruct the path with rotation for each step.
+
+    Args:
+        path (list[Node]): The path as a list of Node objects.
+        recMap (np.array): The map used for conversion.
+    
+    Returns:
+        list[tuple]: The global path with coordinates and rotation.
+    """
     # Add rotation for each step
     global_path = []
 
@@ -280,6 +333,20 @@ def reconstructPathWithRotation(path, recMap):
 
 
 def reconstructBestPath(nodes, start_node, edges, find_exits, grid, recMap) -> list:
+    """
+    Reconstruct the best path from the start node to the exit nodes.
+
+    Args:
+        nodes (dict): Dictionary of nodes in the graph, keyed by position.
+        start_node (Node): The starting node.
+        edges (list[Edge]): List of edges in the graph.
+        find_exits (list[Edge]): List of exit edges.
+        grid (np.array): 2D grid representing the map.
+        recMap (np.array): The map used for conversion.
+    
+    Returns:
+        list[tuple]: The global path with coordinates and rotation.
+    """
     global_path = []
 
     for pos in nodes:
