@@ -2,17 +2,29 @@
 import rospy
 from map_utils import getMap, transformMap
 from graph_utils import buildGraph, findExits, findClosestNode, reconstructBestPath
-from visualization_utils import plotMap, plotGraph, plotNodePositionGraph
+from visualization_utils import plotMap, plotGraph, plotNodePositionGraph, plotArrowPathGraph, plotTransformGoadAndRobotPoseGraph, plotEvaluatedTrajectoriesGraph
 from robot_controller import localiseRobot, generateControls, pubCMD, pubGoal, pubTrajectory, PT2Block, evaluateControls, transformGoalRelativeToRobot
 import numpy as np
 
-def main():
-    rospy.init_node("moro_maze_navigation")
-    recMap = getMap()
 
-    # DEBUG - Plot map
+# DEBUG FLAGS
+DEBUG_MAP = False
+DEBUG_GRAPH = False
+DEBUG_PATH = False
+DEBUG_TRAJECTORY = False
+
+
+def main():
+    """
+    Main function to initialize the ROS node and execute the maze navigation algorithm.
+    """
+    rospy.init_node("moro_maze_navigation")
+
+    recMap = getMap()
     freepoints, wallpoints = transformMap(recMap)
-    plotMap(freepoints, wallpoints)
+
+    if DEBUG_MAP:
+        plotMap(freepoints, wallpoints)
 
     # Convert map to 2D grid
     grid = np.array(recMap.data).reshape((recMap.info.height, recMap.info.width))
@@ -24,15 +36,19 @@ def main():
     nodes, find_exits = findExits(grid, nodes)
     edges += find_exits
 
-    # print("Nodes:", len(nodes), "- Edges:", len(edges))
-    # for edge in edges:
-    #     print(edge)
-
     robot_pose = localiseRobot()
+
+    if DEBUG_GRAPH:
+        # plotGraph(recMap, edges, wallpoints, robot_pose)
+        # We will use the second one because the first plot is include inside the plotNodePositionGraph function
+        plotNodePositionGraph(recMap, nodes, edges, wallpoints, robot_pose)
 
     # A* search
     start_node = findClosestNode(robot_pose, edges, recMap)
     global_path = reconstructBestPath(nodes, start_node, edges, find_exits, grid, recMap)
+
+    if DEBUG_PATH:
+        plotArrowPathGraph(robot_pose, global_path, wallpoints)
 
     # Parameters - TODO: Tune these parameters
     ts = 0.5
@@ -47,12 +63,14 @@ def main():
         goal_pose = transformGoalRelativeToRobot(robot_pose,global_path[current_goal_ID])
         controls = generateControls(last_control)
         costs, trajectories = evaluateControls(controls, robot_model, horizon, goal_pose, ts)
-        # for i in range(len(trajectories)):
-        #     print(f"Trajectories: {trajectories[i]} - Cost: {costs[i]}")
         best_idx = np.argmin(costs)
         last_control = controls[best_idx]
 
-        # Publish best control, trajectory, and goal
+        if DEBUG_TRAJECTORY:
+            # plotTransformGoadAndRobotPoseGraph(goal_pose, wallpoints)
+            # We will use the second one because the first plot is include inside the evaluateTrajectoriesGraph function
+            plotEvaluatedTrajectoriesGraph(goal_pose, wallpoints, trajectories, costs)
+
         pubCMD(last_control)
         pubTrajectory(trajectories[best_idx])
         pubGoal(goal_pose)
@@ -63,12 +81,10 @@ def main():
 
             if current_goal_ID == len(global_path):
                 break
-
-    # # Stop robot
+        
+    # Stop robot
     pubCMD([0, 0])
-
 
 
 if __name__ == "__main__":
     main()
-    

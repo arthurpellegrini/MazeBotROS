@@ -16,6 +16,13 @@ COLOR_SCHEME = {
 
 ## Visualise transformed maze and scans
 def plotMap(free_positions, wall_positions):
+    """
+    Visualize the transformed maze and scans.
+
+    Args:
+        free_positions (np.ndarray): Array of free positions in the map.
+        wall_positions (np.ndarray): Array of wall positions in the map.
+    """
     # Create single figure
     plt.rcParams['figure.figsize'] = [7, 7]
     fig, ax = plt.subplots()
@@ -45,6 +52,15 @@ def plotMap(free_positions, wall_positions):
 
 
 def plotGraph(recMap, edges, wall_positions, robot_pos):
+    """
+    Visualize the maze and generated graph.
+
+    Args:
+        recMap: The map data.
+        edges: List of edges in the graph.
+        wall_positions (np.ndarray): Array of wall positions in the map.
+        robot_pos (tuple): The robot's position.
+    """
     ## Visualise maze and generated graph
     # Create single figure
     plt.rcParams['figure.figsize'] = [7, 7]
@@ -103,6 +119,16 @@ def plotGraph(recMap, edges, wall_positions, robot_pos):
 
 
 def plotNodePositionGraph(recMap, nodes, edges, wall_positions, robot_pos):
+    """
+    Visualize the maze and generated graph with node positions.
+
+    Args:
+        recMap: The map data.
+        nodes: List of nodes in the graph.
+        edges: List of edges in the graph.
+        wall_positions (np.ndarray): Array of wall positions in the map.
+        robot_pos (tuple): The robot's position.
+    """
     ## Visualise maze and generated graph
     # Create single figure
     plt.rcParams['figure.figsize'] = [7, 7]
@@ -164,6 +190,14 @@ def plotNodePositionGraph(recMap, nodes, edges, wall_positions, robot_pos):
     
     
 def plotArrowPathGraph(robotpose, global_path, wallPositions):
+    """
+    Visualize the global path with robot poses as arrows.
+
+    Args:
+        robotpose (list): The robot's pose.
+        global_path (list): The global path.
+        wallPositions (np.ndarray): Array of wall positions in the map.
+    """
     plt.rcParams['figure.figsize'] = [7, 7]
     fig, ax = plt.subplots()
 
@@ -206,6 +240,13 @@ def plotArrowPathGraph(robotpose, global_path, wallPositions):
     
     
 def plotTransformGoadAndRobotPoseGraph(goalpose, wallPositions):
+    """
+    Visualize the transformed goal and robot poses.
+
+    Args:
+        goalpose (list): The goal pose.
+        wallPositions (np.ndarray): Array of wall positions in the map.
+    """
     ## Visualise transformed goal and robot poses
     # Create single figure
     plt.rcParams['figure.figsize'] = [7, 7]
@@ -251,6 +292,15 @@ def plotTransformGoadAndRobotPoseGraph(goalpose, wallPositions):
     
     
 def plotEvaluatedTrajectoriesGraph(goalpose, wallPositions, trajectories, costs):
+    """
+    Visualize the evaluated trajectories shaded with cost.
+
+    Args:
+        goalpose (list): The goal pose.
+        wallPositions (np.ndarray): Array of wall positions in the map.
+        trajectories (list): List of trajectories.
+        costs (np.ndarray): Array of costs associated with the trajectories.
+    """
     plt.rcParams['figure.figsize'] = [7, 7]
     fig, ax = plt.subplots()
 
